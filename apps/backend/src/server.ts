@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(8089),
-  DATABASE_URL: z.string().default('postgres://h1b:h1bpass@localhost:5433/h1bfriend'),
+  DATABASE_URL: z.string().default('postgres://h1b:postgres@127.0.0.1:5432/h1bfriend'),
 });
 
 const env = envSchema.parse({

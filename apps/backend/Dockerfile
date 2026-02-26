@@ -13,6 +13,6 @@ EXPOSE 8089
 ENV NODE_ENV=production
 ENV PORT=8089
 # In docker-compose, the db service is named 'db'
-ENV DATABASE_URL=postgres://h1b:h1bpass@db:5432/h1bfriend
+ENV DATABASE_URL=postgres://h1b:postgres@db:5432/h1bfriend
 
 CMD ["node", "dist/server.js"]

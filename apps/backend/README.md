@@ -1,45 +1,34 @@
-# h1bfriend-backend
+# Backend API (Fastify)
 
-Fastify + Postgres backend for H1B Friendly.
+This is the core REST API that serves data to the Next.js frontend. It connects to the shared PostgreSQL database populated by the `etl` pipeline.
 
-## One-time setup
+## Setup
 
-```bash
-npm install
-```
+1. Copy the `.env.example` file:
+   ```bash
+   cp .env.example .env
+   ```
+   Provide your actual database credentials inside `.env`. Do not check this file into source control.
 
-## Local DB
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-docker compose up -d
-```
+## Running Locally
 
-## Sync FY2025 (from local XLSX files)
-
-This will:
-- convert FY2025 Q1-Q4 `*.xlsx` to CSV
-- drop extra columns that don't exist in `lca_raw` (e.g. `EMPLOYER_FEIN`, `LAWFIRM_BUSINESS_FEIN`)
-- delete existing FY2025 rows from `lca_raw` (idempotent)
-- import FY2025 into `lca_raw`
-- rebuild derived tables (`companies`, `jobs`)
-
-Run:
+To run the backend independently (without Docker Compose):
 
 ```bash
-npm run sync:fy2025
+npm run dev
 ```
 
-Expected input files:
+The server will listen on port `8089` by default.
 
-```
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q1.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q2.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q3.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q4.xlsx
-```
+## API Endpoints
 
-## API
-
-- Health: `GET /health`
-- Companies: `GET /api/v1/companies`
-- Titles: `GET /api/v1/titles`
+- `GET /health`: Healthcheck.
+- `GET /api/v1/meta/years`: Retrieve available fiscal years.
+- `GET /api/v1/companies`: Paginated company list and search.
+- `GET /api/v1/jobs`: Paginated individual LCA filings.
+- `GET /api/v1/titles`: Job title summaries.

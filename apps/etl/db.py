@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgres://h1b:h1bpass@127.0.0.1:5432/h1bfriend")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgres://h1b:postgres@127.0.0.1:5432/h1bfriend")
 
 # Initialize a small connection pool
 pool = SimpleConnectionPool(1, 10, DATABASE_URL)

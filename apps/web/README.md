@@ -1,50 +1,27 @@
-# H1B Friend (Next.js)
+# H1B Friend (Next.js Web)
 
-Local dev for the SEO-first web app.
+This is the SEO-first Next.js React frontend for H1B Friendly.
 
-## Prerequisites
+## Requirements
 
-- Node.js 18+
-- Docker Desktop (for Postgres)
+1. Verify the `db` and `backend` containers are running via the root `docker-compose.yml`.
+2. Ensure you have Node 20+ installed.
+3. Make sure to define your variables in `.env` based on `.env.example`. Do NOT commit it.
 
-This repo expects the backend repo to live next to it:
-
-```
-.../h1bfriend-web
-.../h1bfriend-backend
-```
-
-## One command to start frontend + backend + DB
-
-From this repo:
+## Local Dev
 
 ```bash
-npm run dev:all
+npm install
+npm run dev
 ```
 
-- Frontend: http://localhost:3007 (or the default Next port if you changed it)
-- Backend API: http://localhost:8089
-- Postgres: localhost:5433 (db: `h1bfriend`, user: `h1b`, pass: `h1bpass`)
+The web app will run on `http://localhost:3000`.
 
-## Config
+## Build & Docker
 
-Copy and edit env:
+The `next.config.ts` is configured for `output: "standalone"` to ensure minimal image sizes when built as a Docker container.
 
+To build manually:
 ```bash
-cp .env.example .env
-```
-
-Key values:
-
-- `H1B_API_BASE_URL=http://localhost:8089`
-- `NEXT_PUBLIC_SITE_URL=http://localhost:3007`
-
-## Notes
-
-- `npm run dev:all` will run `docker compose up -d` for the backend database.
-- It also force-frees port `8089` before starting the backend (prevents `EADDRINUSE`).
-- To stop everything, stop the backend/frontend terminal processes and run:
-
-```bash
-docker compose -f ../h1bfriend-backend/docker-compose.yml down
+npm run build
 ```

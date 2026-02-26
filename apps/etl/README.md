@@ -1,45 +1,34 @@
-# h1bfriend-backend
+# ETL Pipeline (Python)
 
-Fastify + Postgres backend for H1B Friendly.
+This directory contains the Python-based ETL engine for ingesting DOL Combined LCA Disclosure Excel files natively into Postgres.
 
-## One-time setup
+## Setup
 
-```bash
-npm install
-```
+1. Copy `.env.example` to `.env` and set your `DATABASE_URL`:
+   ```bash
+   cp .env.example .env
+   ```
+   **DO NOT** commit your `.env` file containing actual passwords.
+   Ensure the database URL points to your host-mapped PostgreSQL port (default `127.0.0.1:5432` if using `docker compose` from root).
 
-## Local DB
+2. Create a virtual environment and install dependencies:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
-```bash
-docker compose up -d
-```
+## Usage
 
-## Sync FY2025 (from local XLSX files)
-
-This will:
-- convert FY2025 Q1-Q4 `*.xlsx` to CSV
-- drop extra columns that don't exist in `lca_raw` (e.g. `EMPLOYER_FEIN`, `LAWFIRM_BUSINESS_FEIN`)
-- delete existing FY2025 rows from `lca_raw` (idempotent)
-- import FY2025 into `lca_raw`
-- rebuild derived tables (`companies`, `jobs`)
-
-Run:
+Run the `main.py` script with the absolute or relative path to the official DOL `.xlsx` dataset:
 
 ```bash
-npm run sync:fy2025
+python3 main.py <path_to_excel_file> <fiscal_year>
 ```
 
-Expected input files:
-
-```
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q1.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q2.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q3.xlsx
-/Users/chongwang/Documents/openclaw-workspace/h1b-data/LCA_Disclosure_Data_FY2025_Q4.xlsx
+Example:
+```bash
+python3 main.py ../../h1b-data/LCA_Disclosure_Data_FY2025_Q1.xlsx 2025
 ```
 
-## API
-
-- Health: `GET /health`
-- Companies: `GET /api/v1/companies`
-- Titles: `GET /api/v1/titles`
+The script will automatically migrate schemas, drop/recreated indexes for bulk COPY speed, and regenerate all the derived `companies` and `jobs` caches.

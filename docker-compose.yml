@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: h1bfriend
       POSTGRES_USER: h1b
-      POSTGRES_PASSWORD: h1bpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -23,7 +23,7 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - DATABASE_URL=postgres://h1b:h1bpass@db:5432/h1bfriend
+      - DATABASE_URL=${DATABASE_URL:-postgres://h1b:postgres@db:5432/h1bfriend}
       - PORT=8089
       - NODE_ENV=production
     depends_on:
