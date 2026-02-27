@@ -17,6 +17,17 @@ const env = envSchema.parse({
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 
+const JOB_TITLE_NORM_SQL = `job_title`; // We rely on pre-normalization in the ETL (transformers.py)
+
+const RAW_WAGE_NUM = `NULLIF(regexp_replace(split_part(wage_rate_of_pay_from, '-', 1), '[^0-9.]', '', 'g'), '')::numeric`;
+
+const ANNUAL_WAGE_SQL = `
+  CASE 
+    WHEN (${RAW_WAGE_NUM}) BETWEEN 10000 AND 5000000 THEN (${RAW_WAGE_NUM})
+    ELSE NULL 
+  END
+`;
+
 const app = Fastify({ logger: true });
 await app.register(cors, { origin: true });
 
@@ -147,7 +158,7 @@ app.get('/api/v1/companies/slug/:slug/insights', async (req, reply) => {
         case_status,
         fiscal_year
       FROM lca_raw
-      WHERE TRIM(REGEXP_REPLACE(UPPER(employer_name), '[^A-Z0-9]+', ' ', 'g')) = $1
+      WHERE employer_name_normalized = $1
         AND job_title IS NOT NULL AND job_title <> ''
     ), scoped AS (
       SELECT * FROM filtered
@@ -177,7 +188,7 @@ app.get('/api/v1/companies/slug/:slug/insights', async (req, reply) => {
         fiscal_year AS year,
         COUNT(*)::int AS filings,
         SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals
-      FROM scoped
+      FROM filtered
       GROUP BY 1
       ORDER BY year ASC
     )
@@ -212,7 +223,7 @@ app.get('/api/v1/jobs', async (req, reply) => {
 
   if (q.keyword) {
     params.push(`%${q.keyword}%`);
-    where.push(`title ILIKE $${params.length}`);
+    where.push(`job_title ILIKE $${params.length}`);
   }
 
   if (q.state) {
@@ -266,7 +277,7 @@ app.get('/api/v1/titles', async (req, reply) => {
     .parse(req.query);
 
   const params: any[] = [];
-  const where = q.year ? 'WHERE fiscal_year = $1' : '';
+  const where = q.year ? 'WHERE fiscal_year = $1 AND' : 'WHERE';
   if (q.year) params.push(q.year);
 
   params.push(q.limit);
@@ -274,16 +285,15 @@ app.get('/api/v1/titles', async (req, reply) => {
   const sql = `
     WITH base AS (
       SELECT
-        REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g') AS title_raw,
-        TRIM(REGEXP_REPLACE(UPPER(REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g')), '[^A-Z0-9]+', ' ', 'g')) AS title_norm,
+        job_title AS title_raw,
+        job_title AS title_norm,
         fiscal_year
       FROM lca_raw
-      ${where}
-      AND job_title IS NOT NULL AND job_title <> ''
+      ${where} job_title IS NOT NULL AND job_title <> ''
     ), agg AS (
       SELECT
         title_norm,
-        MAX(title_raw) AS title,
+        title_norm AS title,
         COUNT(*)::int AS filings,
         MAX(fiscal_year)::int AS last_year
       FROM base
@@ -299,6 +309,8 @@ app.get('/api/v1/titles', async (req, reply) => {
     LIMIT $${params.length};
   `;
 
+  console.log("SQL QUERY:", sql);
+
   const res = await pool.query(sql, params);
   return reply.send(ok(res.rows));
 });
@@ -311,10 +323,10 @@ app.get('/api/v1/titles/:slug/summary', async (req, reply) => {
   const sql = `
     WITH base AS (
       SELECT
-        REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g') AS title_raw,
-        TRIM(REGEXP_REPLACE(UPPER(REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g')), '[^A-Z0-9]+', ' ', 'g')) AS title_norm,
+        job_title AS title_raw,
+        job_title AS title_norm,
         LOWER(TRIM(BOTH '-' FROM REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g'), '[^A-Za-z0-9]+', '-', 'g'), '-+', '-', 'g'))) AS slug,
-        TRIM(REGEXP_REPLACE(UPPER(employer_name), '[^A-Z0-9]+', ' ', 'g')) AS employer_norm,
+        employer_name_normalized AS employer_norm,
         TRIM(worksite_state) AS worksite_state,
         TRIM(worksite_city) AS worksite_city,
         case_status,
@@ -322,9 +334,12 @@ app.get('/api/v1/titles/:slug/summary', async (req, reply) => {
       FROM lca_raw
       WHERE job_title IS NOT NULL AND job_title <> ''
         AND employer_name IS NOT NULL AND employer_name <> ''
-    ), filtered AS (
+    ), base_filtered AS (
       SELECT * FROM base
       WHERE slug = $1
+    ), filtered AS (
+      SELECT * FROM base_filtered
+      WHERE 1=1
       ${yearWhere}
     ), totals AS (
       SELECT
@@ -368,7 +383,7 @@ app.get('/api/v1/titles/:slug/summary', async (req, reply) => {
         fiscal_year AS year,
         COUNT(*)::int AS filings,
         SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals
-      FROM filtered
+      FROM base_filtered
       GROUP BY 1
       ORDER BY year ASC
     )
@@ -393,8 +408,10 @@ app.get('/api/v1/rankings', async (req, reply) => {
       state: z.string().trim().toUpperCase().optional(),
       city: z.string().trim().toUpperCase().optional(),
       job_title: z.string().trim().optional(),
+      company: z.string().trim().optional(),
       sortBy: z.enum(['approvals', 'salary']).default('approvals'),
       limit: z.coerce.number().int().min(1).max(500).default(50),
+      minApprovals: z.coerce.number().int().min(0).optional(),
     })
     .parse(req.query);
 
@@ -417,16 +434,31 @@ app.get('/api/v1/rankings', async (req, reply) => {
     params.push(`%${q.job_title}%`);
     where.push(`job_title ILIKE $${params.length}`);
   }
+  if (q.company) {
+    params.push(`%${q.company}%`);
+    where.push(`employer_name ILIKE $${params.length}`);
+  }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  
+  // Default to min 100 approvals when sorting by salary to avoid outliers.
+  let minApprovals = q.minApprovals ?? (q.sortBy === 'salary' ? 100 : 0);
+  
+  if (minApprovals > 0) {
+    params.push(minApprovals);
+  }
+
+  const havingSql = minApprovals > 0 ? `HAVING SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END) >= $${params.length}` : '';
+  
   params.push(q.limit);
 
   const sql = `
     WITH base AS (
       SELECT
-        TRIM(REGEXP_REPLACE(UPPER(employer_name), '[^A-Z0-9]+', ' ', 'g')) AS employer_norm,
+        employer_name_normalized AS employer_norm,
         case_status,
-        wage_rate_of_pay_from
+        wage_rate_of_pay_from,
+        wage_unit_of_pay
       FROM lca_raw
       ${whereSql}
     ), agg AS (
@@ -434,9 +466,10 @@ app.get('/api/v1/rankings', async (req, reply) => {
         employer_norm,
         COUNT(*)::int AS filings,
         SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals,
-        AVG(NULLIF(regexp_replace(wage_rate_of_pay_from, '[^0-9.]', '', 'g'), '')::numeric) AS avg_salary
+        AVG(${ANNUAL_WAGE_SQL}) AS avg_salary
       FROM base
       GROUP BY employer_norm
+      ${havingSql}
     )
     SELECT
       a.employer_norm,
@@ -462,6 +495,7 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
       state: z.string().trim().toUpperCase().optional(),
       city: z.string().trim().toUpperCase().optional(),
       job_title: z.string().trim().optional(),
+      company: z.string().trim().optional(),
     })
     .parse(req.query);
 
@@ -506,14 +540,24 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     trendWhere.push(`job_title ILIKE $${trendParams.length}`);
   }
 
+  if (q.company) {
+    const val = `%${q.company}%`;
+
+    exactParams.push(val);
+    exactWhere.push(`employer_name ILIKE $${exactParams.length}`);
+
+    trendParams.push(val);
+    trendWhere.push(`employer_name ILIKE $${trendParams.length}`);
+  }
+
   const exactWhereSql = exactWhere.length ? `WHERE ${exactWhere.join(' AND ')}` : '';
   const trendWhereSql = trendWhere.length ? `WHERE ${trendWhere.join(' AND ')}` : '';
 
   const exactSql = `
     SELECT
       COUNT(*)::int AS total_filings,
-      SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS total_approvals,
-      AVG(NULLIF(regexp_replace(wage_rate_of_pay_from, '[^0-9.]', '', 'g'), '')::numeric) AS avg_salary
+      COALESCE(SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END), 0)::int AS total_approvals,
+      COALESCE(AVG(${ANNUAL_WAGE_SQL}), 0) AS avg_salary
     FROM lca_raw
     ${exactWhereSql}
   `;
@@ -522,8 +566,8 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     SELECT
       fiscal_year AS year,
       COUNT(*)::int AS filings,
-      SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals,
-      AVG(NULLIF(regexp_replace(wage_rate_of_pay_from, '[^0-9.]', '', 'g'), '')::numeric) AS avg_salary
+      COALESCE(SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END), 0)::int AS approvals,
+      COALESCE(AVG(${ANNUAL_WAGE_SQL}), 0) AS avg_salary
     FROM lca_raw
     ${trendWhereSql}
     GROUP BY fiscal_year

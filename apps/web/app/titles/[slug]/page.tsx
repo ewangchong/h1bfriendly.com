@@ -69,6 +69,10 @@ export default async function TitlePage({
   const approved = s.totals.approvals || 0;
   const rate = filed > 0 ? approved / filed : null;
 
+  const titleYears = s.trend?.length > 0
+    ? [...s.trend].reverse().map(t => String(t.year))
+    : years;
+
   return (
     <div>
       <div style={{ textAlign: 'center', padding: '18px 0 6px' }}>
@@ -97,7 +101,7 @@ export default async function TitlePage({
           }}
         >
           <span style={{ color: '#666', fontSize: 14 }}>Year</span>
-          {years.map((y) => (
+          {titleYears.map((y) => (
             <Link
               key={y}
               href={`/titles/${slug}?year=${y}`}
@@ -106,6 +110,7 @@ export default async function TitlePage({
                 borderRadius: 999,
                 border: '1px solid #eee',
                 background: y === year ? '#111' : '#fff',
+
                 color: y === year ? '#fff' : '#111',
                 textDecoration: 'none',
                 fontSize: 13,

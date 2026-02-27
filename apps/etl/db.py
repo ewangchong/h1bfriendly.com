@@ -122,14 +122,19 @@ def migrate_if_needed():
                   preparer_middle_initial TEXT,
                   preparer_business_name TEXT,
                   preparer_email TEXT,
+                  employer_name_normalized TEXT,
                   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
             """)
+            # 2. Migration: Ensure column exists if table was already created
+            cur.execute("ALTER TABLE lca_raw ADD COLUMN IF NOT EXISTS employer_name_normalized TEXT;")
+
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_year ON lca_raw (fiscal_year);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_employer ON lca_raw (employer_name);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_employer_norm ON lca_raw (employer_name_normalized);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_case_number ON lca_raw (case_number);")
 
-            # 2. Company schema modifications 
+            # 3. Company schema modifications 
             cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS slug TEXT;")
             cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS employer_name_normalized TEXT;")
             

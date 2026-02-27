@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getCompanyBySlug, getCompanyInsightsBySlug } from '@/lib/h1bApi';
+import { getAvailableYears, getCompanyBySlug, getCompanyInsightsBySlug } from '@/lib/h1bApi';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -53,6 +53,11 @@ export default async function CompanyDetail({
 
   const hq = [c.headquarters_city, c.headquarters_state, c.headquarters_country].filter(Boolean).join(', ');
 
+  const globalYears = (await getAvailableYears()).map(String);
+  const companyYears = insights.trend?.length > 0 
+    ? [...insights.trend].reverse().map((t: any) => String(t.year))
+    : globalYears;
+
   return (
     <article>
       <div
@@ -66,7 +71,7 @@ export default async function CompanyDetail({
       >
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['2024', '2023', '2022', '2021', '2020'].map((y) => (
+            {companyYears.map((y) => (
               <a
                 key={y}
                 href={`/companies/${slug}?year=${y}`}

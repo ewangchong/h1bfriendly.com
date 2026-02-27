@@ -24,8 +24,10 @@ export default async function RankingsPage({
     state?: string;
     city?: string;
     job_title?: string;
+    company?: string;
     sortBy?: 'approvals' | 'salary';
     limit?: string;
+    minApprovals?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -33,6 +35,7 @@ export default async function RankingsPage({
   const year = sp.year || years[0] || '2025'; // Fallback to latest
 
   const limitNum = sp.limit ? parseInt(sp.limit, 10) : 10;
+  const minAppsNum = sp.minApprovals !== undefined ? parseInt(sp.minApprovals, 10) : undefined;
 
   let rankings;
   let summary;
@@ -44,14 +47,17 @@ export default async function RankingsPage({
         state: sp.state,
         city: sp.city,
         job_title: sp.job_title,
+        company: sp.company,
         sortBy: sp.sortBy,
         limit: limitNum,
+        minApprovals: minAppsNum,
       }),
       getRankingsSummary({
         year, // The backend ignores year for trend but uses it for exact totals
         state: sp.state,
         city: sp.city,
         job_title: sp.job_title,
+        company: sp.company,
       }),
       getTitles({ year, limit: 50 })
     ]);
@@ -68,6 +74,14 @@ export default async function RankingsPage({
     );
   }
 
+  // Determine which years to show in the UI selector. 
+  // If we have a trend (e.g. searching for a company), only show years they actually filed in.
+  const yearsWithData = summary?.trend
+    ?.filter(t => t.filings > 0)
+    .map(t => String(t.year)) || [];
+  
+  const displayYears = (yearsWithData.length > 0) ? yearsWithData : years;
+
   return (
     <div>
       <div style={{ textAlign: 'center', padding: '32px 16px 16px' }}>
@@ -81,7 +95,7 @@ export default async function RankingsPage({
           WebkitTextFillColor: 'transparent',
           lineHeight: 1.2
         }}>
-          H1B Sponsor Leaderboard
+          {sp.company ? sp.company : 'H1B Sponsor'} Leaderboard
         </h1>
         <p style={{
           margin: '16px auto 0',
@@ -96,7 +110,7 @@ export default async function RankingsPage({
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <RankingsControls defaultYear={year} years={years} titles={titles} />
+        <RankingsControls defaultYear={year} years={displayYears} titles={titles} />
       </div>
 
       <div style={{ marginTop: 12, marginBottom: 12 }}>
@@ -126,6 +140,7 @@ export default async function RankingsPage({
               if (year) sp2.set('year', year);
               if (sp.state) sp2.set('state', sp.state);
               if (sp.job_title) sp2.set('job_title', sp.job_title);
+              if (sp.company) sp2.set('company', sp.company);
               if (sp.sortBy) sp2.set('sortBy', sp.sortBy);
               sp2.set('limit', String(nextLimit));
               return (
@@ -161,19 +176,19 @@ export default async function RankingsPage({
             <div style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Filings</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
-                {summary.totals.total_filings.toLocaleString()}
+                {(summary.totals.total_filings ?? 0).toLocaleString()}
               </div>
             </div>
             <div style={{ background: '#ecfdf5', padding: 20, borderRadius: 16, border: '1px solid #d1fae5' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Approvals</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#065f46', marginTop: 4 }}>
-                {summary.totals.total_approvals.toLocaleString()}
+                {(summary.totals.total_approvals ?? 0).toLocaleString()}
               </div>
             </div>
             <div style={{ background: '#fffbeb', padding: 20, borderRadius: 16, border: '1px solid #fef3c7' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Average Salary</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#92400e', marginTop: 4 }}>
-                {summary.totals.avg_salary ? `$${Number(summary.totals.avg_salary).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
+                {summary.totals.avg_salary ? `$${Number(summary.totals.avg_salary ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0'}
               </div>
             </div>
           </div>
@@ -196,7 +211,7 @@ function RankingCard({ rank, r }: { rank: number; r: any }) {
   const avgSalary = Number(r.avg_salary);
   const formattedSalary = isNaN(avgSalary) || avgSalary === 0
     ? 'N/A'
-    : '$' + avgSalary.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    : '$' + (avgSalary ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   return (
     <div
@@ -238,7 +253,7 @@ function RankingCard({ rank, r }: { rank: number; r: any }) {
         <div style={{ textAlign: 'right' }}>
           <div style={{ color: '#666', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Approvals</div>
           <div style={{ fontWeight: 800, fontSize: 15, color: '#059669' }}>
-            {r.approvals.toLocaleString()}
+            {(r.approvals ?? 0).toLocaleString()}
           </div>
         </div>
         <div style={{ textAlign: 'right', minWidth: 80 }}>

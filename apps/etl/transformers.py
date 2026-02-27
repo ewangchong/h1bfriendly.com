@@ -1,6 +1,7 @@
 import sys
 import pandas as pd
 from io import StringIO
+import re
 from db import get_connection, release_connection
 
 # Expected DB columns exactly matching the schema of `lca_raw`
@@ -32,8 +33,88 @@ LCA_COLUMNS = [
     "pw_survey_name", "total_worksite_locations", "agree_to_lc_statement", "h_1b_dependent", 
     "willful_violator", "support_h1b", "statutory_basis", "appendix_a_attached", 
     "public_disclosure", "preparer_last_name", "preparer_first_name", "preparer_middle_initial", 
-    "preparer_business_name", "preparer_email"
+    "preparer_business_name", "preparer_email", "employer_name_normalized"
 ]
+
+def clean_salary(val, unit=None):
+    """
+    Strips non-numeric characters (like $ and ,) and ensures the value is > 0.
+    Normalizes the returned float to an ANNUAL salary based on the 'unit'.
+    """
+    if pd.isna(val):
+        return None
+    s = str(val).strip()
+    if not s:
+        return None
+    s = re.sub(r'[^\d\.]', '', s)
+    try:
+        num = float(s)
+        if num <= 0:
+            return None
+            
+        # Normalize to Annual Salary based on the Unit
+        unit_str = str(unit).upper().strip() if not pd.isna(unit) else "YEAR"
+        
+        # Heuristics: Sometimes companies enter their ANNUAL salary e.g. 90000 
+        # but accidentally select 'Week' as the unit in the DOL form.
+        # This causes the DB to record $4.6M/year. 
+        # So we cap maximum realistically scaled salaries to prevent this.
+        
+        if unit_str == "HOUR":
+            # Roughly 2080 hours a year
+            if num > 500: # Nobody makes $500/hr on typical H1Bs (that'd be > $1M/yr)
+                pass # Already looks like an annual or monthly figure inputted wrongly, don't scale
+            else:
+                num = num * 2080
+        elif unit_str == "WEEK":
+            if num > 20000: # Already looks annual, skip multiplying
+                pass 
+            else:
+                num = num * 52
+        elif unit_str == "BI-WEEKLY":
+            if num > 30000:
+                pass
+            else:
+                num = num * 26
+        elif unit_str == "MONTH":
+            if num > 50000:
+                pass
+            else:
+                num = num * 12
+                
+        return round(num, 2)
+    except ValueError:
+        return None
+
+def normalize_job_title(title):
+    if pd.isna(title):
+        return ""
+    t = str(title).strip().upper()
+    t = re.sub(r'\s+', ' ', t) # collapse spaces
+    
+    if "SOFTWARE ENGINEER" in t or "SOFTWARE DEVELOPER" in t or "SDE " in t or "PROGRAMMER ANALYST" in t:
+        return "SOFTWARE ENGINEER"
+    elif "DATA SCIENTIST" in t:
+        return "DATA SCIENTIST"
+    elif "DATA ENGINEER" in t:
+        return "DATA ENGINEER"
+    elif "PRODUCT MANAGER" in t:
+        return "PRODUCT MANAGER"
+    elif "BUSINESS ANALYST" in t:
+        return "BUSINESS ANALYST"
+    elif "DATA ANALYST" in t:
+        return "DATA ANALYST"
+    elif "MACHINE LEARNING" in t or " MLE " in t:
+        return "MACHINE LEARNING ENGINEER"
+    elif "MECHANICAL ENGINEER" in t:
+        return "MECHANICAL ENGINEER"
+    elif "ELECTRICAL ENGINEER" in t:
+        return "ELECTRICAL ENGINEER"
+    elif "HARDWARE ENGINEER" in t:
+        return "HARDWARE ENGINEER"
+    else:
+        # Strip all non-alphanumeric chars
+        return re.sub(r'[^A-Z0-9]+', ' ', t).strip()
 
 def drop_indexes(cur) -> None:
     print("Dropping indexes temporarily for bulk copy...")
@@ -80,24 +161,76 @@ def load_excel_to_postgres(file_path: str, fiscal_year: int, cur=None) -> None:
 
             print(f"Loaded {len(df)} rows into memory. Processing...")
             
-            # Map Excel columns dynamically to db columns by index matching since DOL CSVs vary wildly but order is often same after FEIN drop
-            # Or by name matching. Since the order often breaks, let's map by mapping their index to our expected columns
-            # But the safer way is to truncate it to the first N columns we care about.
-            max_cols = min(len(df.columns), len(LCA_COLUMNS) - 1)
-            mapped_df = df.iloc[:, :max_cols].copy()
+            # Map Excel columns dynamically to db columns by explicit NAME matching.
+            # This completely shields against upstream column insertions/deletions/shifts.
+            final_df = pd.DataFrame()
+            final_df['fiscal_year'] = [fiscal_year] * len(df)
             
-            # Make sure we add the fiscal_year
-            final_df = pd.DataFrame(columns=LCA_COLUMNS)
-            final_df['fiscal_year'] = [fiscal_year] * len(mapped_df)
+            # Create a lookup of available upper-case columns for fast matching
+            available_cols_upper = {c: c for c in df.columns}
             
-            # Assign remaining columns. Assumes sequential mapping matches mapping length.
-            # E.g case_number is the first column from mapped_df, case_status is second...
-            for i, col_name in enumerate(mapped_df.columns):
-                target_col = LCA_COLUMNS[i + 1] # +1 because 0 is fiscal_year
-                final_df[target_col] = mapped_df[col_name]
+            for expected_col in LCA_COLUMNS[1:]:
+                # Handle specific DOL naming quirks
+                target_search_name = expected_col.upper()
+                if target_search_name == "H_1B_DEPENDENT":
+                    target_search_name = "H-1B_DEPENDENT"
+                    
+                if target_search_name in available_cols_upper:
+                    actual_col_name = available_cols_upper[target_search_name]
+                    final_df[expected_col] = df[actual_col_name]
+                else:
+                    # If DOL randomly dropped this column this quarter, safely null/empty it
+                    final_df[expected_col] = ""
+                    
+            # Basic validation: ensure salaries are valid numbers > 0 and normalize to annual.
+            # If rate_of_pay_from or prevailing_wage is invalid, we drop the row entirely.
+            # Converting to a list comprehension is order-of-magnitude faster than DataFrame.apply(axis=1)
+            if 'wage_rate_of_pay_from' in final_df.columns:
+                unit_arr = final_df['wage_unit_of_pay'].values if 'wage_unit_of_pay' in final_df.columns else [None]*len(final_df)
+                val_arr = final_df['wage_rate_of_pay_from'].values
+                final_df['wage_rate_of_pay_from'] = [clean_salary(v, u) for v, u in zip(val_arr, unit_arr)]
+                    
+            if 'wage_rate_of_pay_to' in final_df.columns:
+                unit_arr = final_df['wage_unit_of_pay'].values if 'wage_unit_of_pay' in final_df.columns else [None]*len(final_df)
+                val_arr = final_df['wage_rate_of_pay_to'].values
+                final_df['wage_rate_of_pay_to'] = [clean_salary(v, u) for v, u in zip(val_arr, unit_arr)]
+
+            if 'prevailing_wage' in final_df.columns:
+                pw_unit_arr = final_df['pw_unit_of_pay'].values if 'pw_unit_of_pay' in final_df.columns else [None]*len(final_df)
+                val_arr = final_df['prevailing_wage'].values
+                final_df['prevailing_wage'] = [clean_salary(v, u) for v, u in zip(val_arr, pw_unit_arr)]
+            
+            # Since everything is now normalized to ANNUAL, we can also force the units to 'Year' 
+            # so postgres downstream calculations don't try to multiply them again.
+            if 'wage_unit_of_pay' in final_df.columns:
+                final_df['wage_unit_of_pay'] = "Year"
+            if 'pw_unit_of_pay' in final_df.columns:
+                final_df['pw_unit_of_pay'] = "Year"
+            
+            # Drop rows where the base salary or prevailing wage could not be parsed
+            initial_len = len(final_df)
+            final_df = final_df.dropna(subset=['wage_rate_of_pay_from', 'prevailing_wage'])
+            
+            dropped_count = initial_len - len(final_df)
+            if dropped_count > 0:
+                print(f"Dropped {dropped_count} rows due to invalid or missing salary data.")
                 
-            # Clean completely NaN strings
+            # Clean completely NaN strings for all other columns
             final_df = final_df.fillna("")
+
+            # Execute explicit string normalizations so the backend doesn't have to compute them
+            if 'job_title' in final_df.columns:
+                # Retains original data but strictly normalizes characters and common titles
+                title_arr = final_df['job_title'].values
+                final_df['job_title'] = [normalize_job_title(t) for t in title_arr]
+                
+            if 'employer_name' in final_df.columns:
+                # Remove extra spaces like backend `UPPER(TRIM(employer_name))`
+                final_df['employer_name'] = final_df['employer_name'].astype(str).str.strip().str.upper()
+                # Create a normalized version for grouping and slugs
+                final_df['employer_name_normalized'] = final_df['employer_name'].str.replace(r'[^A-Z0-9]+', ' ', regex=True).str.strip()
+            else:
+                final_df['employer_name_normalized'] = ""
 
             # Generate CSV in memory for fast copy_expert streaming
             csv_buffer = StringIO()

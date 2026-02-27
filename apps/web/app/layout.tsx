@@ -82,9 +82,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Find H1B sponsorship jobs and opportunities with companies that have a track record of sponsoring international talent.
                 </div>
               </div>
-              <div style={{ color: '#9CA3AF' }}>
-                <div style={{ fontWeight: 700, color: '#fff' }}>Disclaimer</div>
-                <div style={{ marginTop: 6 }}>Data from public sources. Not legal advice.</div>
+              <div style={{ color: '#9CA3AF', flex: 1, minWidth: 300 }}>
+                <div style={{ fontWeight: 700, color: '#fff', marginBottom: 8 }}>Disclaimer</div>
+                <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  <p style={{ margin: '0 0 6px 0' }}>Data is sourced from the public disclosure files of the United States Department of Labor (DOL). This website is not affiliated with, endorsed by, or sponsored by the U.S. Government or the Department of Labor.</p>
+                  <p style={{ margin: '0 0 6px 0' }}>All information is provided "as is" for informational purposes only. We make no representations or warranties regarding the accuracy or completeness of the data.</p>
+                  <p style={{ margin: 0 }}>An LCA filing does not represent an actual job opening or guarantee visa approval.</p>
+                </div>
               </div>
             </div>
             <div style={{ marginTop: 14, color: '#6B7280' }}>© {new Date().getFullYear()} H1B Friendly</div>

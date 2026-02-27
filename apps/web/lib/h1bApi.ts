@@ -58,10 +58,7 @@ function baseUrl() {
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${baseUrl()}${path}`;
-  const isDev = process.env.NODE_ENV === 'development';
-  const caching: RequestInit & { next?: { revalidate: number } } = isDev
-    ? { cache: 'no-store' }
-    : { next: { revalidate: 60 * 60 } }; // 1h (tune later)
+  const caching: RequestInit = { cache: 'no-store' };
 
   const res = await fetch(url, {
     ...init,
@@ -183,16 +180,20 @@ export async function getRankings(params?: {
   state?: string;
   city?: string;
   job_title?: string;
+  company?: string;
   sortBy?: 'approvals' | 'salary';
   limit?: number;
+  minApprovals?: number;
 }) {
   const sp = new URLSearchParams();
   if (params?.year) sp.set('year', params.year);
   if (params?.state) sp.set('state', params.state);
   if (params?.city) sp.set('city', params.city);
   if (params?.job_title) sp.set('job_title', params.job_title);
+  if (params?.company) sp.set('company', params.company);
   if (params?.sortBy) sp.set('sortBy', params.sortBy);
   if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.minApprovals) sp.set('minApprovals', String(params.minApprovals));
 
   const data = await fetchJson<ApiEnvelope<Ranking[]>>(`/api/v1/rankings?${sp.toString()}`);
   return data.data;
@@ -217,12 +218,14 @@ export async function getRankingsSummary(params?: {
   state?: string;
   city?: string;
   job_title?: string;
+  company?: string;
 }) {
   const sp = new URLSearchParams();
   if (params?.year) sp.set('year', params.year);
   if (params?.state) sp.set('state', params.state);
   if (params?.city) sp.set('city', params.city);
   if (params?.job_title) sp.set('job_title', params.job_title);
+  if (params?.company) sp.set('company', params.company);
 
   const data = await fetchJson<ApiEnvelope<RankingsSummary>>(`/api/v1/rankings/summary?${sp.toString()}`);
   return data.data;
