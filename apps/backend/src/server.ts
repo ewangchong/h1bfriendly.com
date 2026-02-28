@@ -22,7 +22,7 @@ const pool = new Pool({ connectionString: env.DATABASE_URL });
 const ANNUAL_WAGE_SQL = `
   CASE 
     WHEN wage_rate_of_pay_from ~ '^[0-9]+(\\.[0-9]+)?$' THEN 
-      CAST(wage_rate_of_pay_from AS NUMERIC) * 
+      (CAST(wage_rate_of_pay_from AS NUMERIC) * 
       CASE 
         WHEN wage_unit_of_pay ILIKE 'Year' THEN 1 
         WHEN wage_unit_of_pay ILIKE 'Month' THEN 12 
@@ -30,8 +30,16 @@ const ANNUAL_WAGE_SQL = `
         WHEN wage_unit_of_pay ILIKE 'Week' THEN 52 
         WHEN wage_unit_of_pay ILIKE 'Hour' THEN 2080 
         ELSE 1 
-      END
+      END)
     ELSE NULL 
+  END
+`;
+
+// Purely for aggregate rankings/averages to avoid data-entry errors skewing results
+const SANITY_WAGE_SQL = `
+  CASE 
+    WHEN (${ANNUAL_WAGE_SQL}) BETWEEN 10000 AND 1000000 THEN (${ANNUAL_WAGE_SQL})
+    ELSE NULL
   END
 `;
 
@@ -499,7 +507,7 @@ app.get('/api/v1/rankings', async (req, reply) => {
         employer_norm,
         COUNT(*)::int AS filings,
         SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals,
-        AVG(${ANNUAL_WAGE_SQL}) AS avg_salary
+        AVG(${SANITY_WAGE_SQL}) AS avg_salary
       FROM base
       GROUP BY employer_norm
       ${havingSql}
@@ -595,7 +603,7 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     SELECT
       COUNT(*)::int AS total_filings,
       COALESCE(SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END), 0)::int AS total_approvals,
-      COALESCE(AVG(${ANNUAL_WAGE_SQL}), 0) AS avg_salary
+      COALESCE(AVG(${SANITY_WAGE_SQL}), 0) AS avg_salary
     FROM lca_raw
     ${exactWhereSql}
   `;
