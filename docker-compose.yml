@@ -10,8 +10,9 @@ services:
       - "5432:5432"
     volumes:
       - h1bfriend-backend_h1bfriend_pgdata:/var/lib/postgresql/data
+    shm_size: 256mb
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U h1b -d h1bfriend" ]
+      test: ["CMD-SHELL", "pg_isready -U h1b -d h1bfriend"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,7 +24,7 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - DATABASE_URL=postgres://h1b:${POSTGRES_PASSWORD:-h1bpass}@db:5432/h1bfriend
+      - DATABASE_URL=postgres://h1b:${POSTGRES_PASSWORD:-postgres}@db:5432/h1bfriend
       - PORT=8089
       - NODE_ENV=production
     depends_on:
@@ -34,14 +35,31 @@ services:
     build:
       context: ./apps/web
     container_name: h1b-web
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - H1B_API_BASE_URL=http://backend:8089
-      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - NEXT_PUBLIC_SITE_URL=https://h1bfriendly.com
     depends_on:
       - backend
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: h1b-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - h1bfriend-caddy_data:/data
+      - h1bfriend-caddy_config:/config
+    depends_on:
+      - web
 
 volumes:
   h1bfriend-backend_h1bfriend_pgdata:
     external: true
+  h1bfriend-caddy_data:
+  h1bfriend-caddy_config:

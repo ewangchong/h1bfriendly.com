@@ -4,6 +4,8 @@ import cors from '@fastify/cors';
 import pg from 'pg';
 const { Pool } = pg;
 import { z } from 'zod';
+import { LRUCache } from 'lru-cache';
+
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(8089),
@@ -17,18 +19,39 @@ const env = envSchema.parse({
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 
-const JOB_TITLE_NORM_SQL = `job_title`; // We rely on pre-normalization in the ETL (transformers.py)
-
-const RAW_WAGE_NUM = `NULLIF(regexp_replace(split_part(wage_rate_of_pay_from, '-', 1), '[^0-9.]', '', 'g'), '')::numeric`;
-
 const ANNUAL_WAGE_SQL = `
   CASE 
-    WHEN (${RAW_WAGE_NUM}) BETWEEN 10000 AND 5000000 THEN (${RAW_WAGE_NUM})
+    WHEN wage_rate_of_pay_from ~ '^[0-9]+(\\.[0-9]+)?$' THEN 
+      CAST(wage_rate_of_pay_from AS NUMERIC) * 
+      CASE 
+        WHEN wage_unit_of_pay ILIKE 'Year' THEN 1 
+        WHEN wage_unit_of_pay ILIKE 'Month' THEN 12 
+        WHEN wage_unit_of_pay ILIKE 'Bi-Weekly' THEN 26 
+        WHEN wage_unit_of_pay ILIKE 'Week' THEN 52 
+        WHEN wage_unit_of_pay ILIKE 'Hour' THEN 2080 
+        ELSE 1 
+      END
     ELSE NULL 
   END
 `;
 
+const cache = new LRUCache<string, any>({
+  max: 10000,
+  ttl: 1000 * 60 * 60 * 24, // 24 hours (data changes quarterly)
+});
+
+
 const app = Fastify({ logger: true });
+
+app.get('/api/v1/debug/cache', async () => {
+  return {
+    success: true,
+    size: cache.size,
+    max: cache.max,
+    entry_keys: Array.from(cache.keys())
+  };
+});
+
 await app.register(cors, { origin: true });
 
 type PageResponse<T> = {
@@ -269,7 +292,12 @@ app.get('/api/v1/jobs/:id', async (req, reply) => {
 // ----- Titles (role direction pages) -----
 
 app.get('/api/v1/titles', async (req, reply) => {
+  const cacheKey = `titles:${JSON.stringify(req.query)}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return reply.send(ok(cached));
+
   const q = z
+
     .object({
       year: z.coerce.number().int().min(2000).max(2100).optional(),
       limit: z.coerce.number().int().min(1).max(500).default(100),
@@ -312,6 +340,7 @@ app.get('/api/v1/titles', async (req, reply) => {
   console.log("SQL QUERY:", sql);
 
   const res = await pool.query(sql, params);
+  cache.set(cacheKey, res.rows);
   return reply.send(ok(res.rows));
 });
 
@@ -392,7 +421,7 @@ app.get('/api/v1/titles/:slug/summary', async (req, reply) => {
       (SELECT COALESCE(json_agg(top_companies), '[]'::json) FROM top_companies) AS top_companies,
       (SELECT COALESCE(json_agg(top_states), '[]'::json) FROM top_states) AS top_states,
       (SELECT COALESCE(json_agg(top_cities), '[]'::json) FROM top_cities) AS top_cities,
-      (SELECT COALESCE(json_agg(trend), '[]'::json) FROM trend) AS trend;
+      (SELECT COALESCE(json_agg(trend), '[]'::json) FROM trend);
   `;
 
   const bind = q.year ? [params.slug, q.year] : [params.slug];
@@ -402,6 +431,10 @@ app.get('/api/v1/titles/:slug/summary', async (req, reply) => {
 });
 
 app.get('/api/v1/rankings', async (req, reply) => {
+  const cacheKey = `rankings:${JSON.stringify(req.query)}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return reply.send(ok(cached));
+
   const q = z
     .object({
       year: z.coerce.number().int().min(2000).max(2100).optional(),
@@ -485,10 +518,15 @@ app.get('/api/v1/rankings', async (req, reply) => {
   `;
 
   const res = await pool.query(sql, params);
+  cache.set(cacheKey, res.rows);
   return reply.send(ok(res.rows));
 });
 
 app.get('/api/v1/rankings/summary', async (req, reply) => {
+  const cacheKey = `summary:${JSON.stringify(req.query)}`;
+  const cached = cache.get(cacheKey);
+  if (cached) return reply.send(ok(cached));
+
   const q = z
     .object({
       year: z.coerce.number().int().min(2000).max(2100).optional(),
@@ -579,11 +617,15 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     pool.query(trendSql, trendParams)
   ]);
 
-  return reply.send(ok({
+  const finalData = {
     totals: exactRes.rows[0] || { total_filings: 0, total_approvals: 0, avg_salary: 0 },
     trend: trendRes.rows || []
-  }));
+  };
+
+  cache.set(cacheKey, finalData);
+  return reply.send(ok(finalData));
 });
+
 
 async function main() {
   // Verify DB connection early

@@ -1,0 +1,10 @@
+    # Proxy API requests to the Fastify backend
+    handle /api/* {
+        reverse_proxy backend:8089
+    }
+
+    # Reverse proxy everything else to the Next.js frontend
+    handle {
+        reverse_proxy web:3000
+    }
+}

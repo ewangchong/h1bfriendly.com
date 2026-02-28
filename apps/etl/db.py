@@ -133,6 +133,51 @@ def migrate_if_needed():
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_employer ON lca_raw (employer_name);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_employer_norm ON lca_raw (employer_name_normalized);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_lca_raw_case_number ON lca_raw (case_number);")
+            
+            # Massive Covering Index to speed up production API Ranking aggregations (prevents Heap disk thrashing on low-RAM instances)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_lca_raw_covering_year 
+                ON lca_raw (fiscal_year) 
+                INCLUDE (employer_name, employer_name_normalized, case_status, wage_rate_of_pay_from, wage_unit_of_pay, worksite_state, worksite_city, job_title);
+            """)
+
+            # Extension for jobs schema
+            cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+
+            # CREATE COMPANIES TABLE
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS companies (
+                  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                  employer_name_normalized TEXT UNIQUE,
+                  slug TEXT,
+                  name TEXT,
+                  h1b_sponsorship_status TEXT,
+                  h1b_sponsorship_confidence NUMERIC,
+                  h1b_applications_filed INT,
+                  h1b_applications_approved INT,
+                  last_h1b_filing_year INT,
+                  created_at TIMESTAMPTZ DEFAULT NOW(),
+                  updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            # CREATE JOBS TABLE
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS jobs (
+                  id UUID PRIMARY KEY,
+                  company_id UUID REFERENCES companies(id),
+                  company_name TEXT,
+                  title TEXT,
+                  location TEXT,
+                  city TEXT,
+                  state TEXT,
+                  country TEXT,
+                  posted_date DATE,
+                  h1b_sponsorship_available BOOLEAN,
+                  created_at TIMESTAMPTZ DEFAULT NOW(),
+                  updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
 
             # 3. Company schema modifications 
             cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS slug TEXT;")
@@ -155,8 +200,6 @@ def migrate_if_needed():
             END $$;
             """)
             
-            # Extension for jobs schema
-            cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
         conn.commit()
         print("Database schema migration complete.")

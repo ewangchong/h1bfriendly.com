@@ -6,14 +6,38 @@
 # node
 node_modules/
 dist/
+.next/
+out/
+build/
+*.tsbuildinfo
 
 # macOS
 .DS_Store
 
 # python
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 
 # data
 h1bfriend-backend_h1bfriend_pgdata/
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.pem

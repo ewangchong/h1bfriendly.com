@@ -27,3 +27,24 @@ variable "key_name" {
   type        = string
   default     = ""
 }
+
+# --- Optional Existing Network Resources ---
+
+variable "vpc_id" {
+  description = "ID of an existing VPC to deploy into. If left empty, a new VPC will be created."
+  type        = string
+  default     = ""
+}
+
+variable "subnet_id" {
+  description = "ID of an existing Subnet to deploy into. Must belong to the provided vpc_id. If left empty, a new subnet will be created."
+  type        = string
+  default     = ""
+}
+
+variable "security_group_ids" {
+  description = "List of existing Security Group IDs to attach to the EC2 instance. If left empty, a new security group will be created."
+  type        = list(string)
+  default     = []
+}
+

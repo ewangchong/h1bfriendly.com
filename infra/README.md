@@ -1,47 +1,50 @@
-# H1B Friend AWS 部署 (最低成本单机方案)
+# H1B Friend AWS Deployment (Optimized Stack)
 
-这套 Terraform 配置会在 AWS 环境中创建一个最低成本的生产级单机服务器，服务器中将自动化安装 Docker 并为您准备好运行环境。
+This Terraform configuration provisions a low-cost, production-ready environment on AWS using a single EC2 instance, automated Docker orchestration, and Caddy for HTTPS.
 
-## 运行前提
-1. 安装 [Terraform](https://developer.hashicorp.com/terraform/downloads) CLI (`brew install terraform`)。
-2. 配置好 AWS 凭证，例如运行过 `aws configure`。
-3. 如果你想通过 SSH 登录服务器，请提前在 AWS 控制台中创建一个 Key Pair 并记住名字。
+## 🏗 Prerequisites
 
-## 部署步骤
+1. Install [Terraform](https://developer.hashicorp.com/terraform/downloads) CLI.
+2. Configure AWS credentials (`aws configure`).
+3. Create an AWS Key Pair (remember the name for SSH access).
 
-1. 初始化 Terraform
-```bash
-terraform init
-```
+## 🚀 Deployment Steps
 
-2. 审查即将创建的资源
-```bash
-terraform plan
-```
-如果你有建立好的 Key Pair 想要挂载给服务器，可以通过变量注入：
-```bash
-terraform plan -var="key_name=my-aws-key"
-```
+1. **Provision Infrastructure**:
 
-3. 确认执行
-```bash
-terraform apply
-```
+   ```bash
+   terraform init
+   terraform plan -var="key_name=your-key"
+   terraform apply
+   ```
 
-4. 部署代码
-执行完毕后控制台会输出一个 `public_ip` (比如 `1.2.3.4`)。目前这台机器上已经安装好了 Docker 和 docker-compose。你可以将本仓库代码通过 SSH或Git 上传到服务器上。
+2. **Sync Code (Production)**:
+   We recommend using `rsync` for rapid updates without the overhead of heavy Git operations on the server:
 
-例如：
-```bash
-ssh -i /path/to/my-aws-key.pem ec2-user@1.2.3.4
-sudo su
-git clone <your-repo> h1bfriend
-cd h1bfriend
-docker compose up -d
-```
+   ```bash
+   # Sync only the necessary application files
+   rsync -avz --exclude='node_modules' --exclude='.next' --exclude='venv' \
+     -e "ssh -i your-key.pem" . ec2-user@your-ip:~/h1bfriend
+   ```
 
-## 销毁资源
-如果不想继续使用了，为了避免产生费用请一键销毁：
-```bash
-terraform destroy
-```
+3. **Orchestrate**:
+   SSH into the server and launch the containers:
+   ```bash
+   ssh -i your-key.pem ec2-user@your-ip
+   cd h1bfriend
+   docker compose up -d --build
+   ```
+
+## 🔒 Security & Networking
+
+- **Caddy Reverse Proxy**: Automatically handles SSL certificates via Let's Encrypt for all configured domains (see `Caddyfile`).
+- **Firewall**: The security group exposes ports 80 and 443 for public traffic. Application ports (3000, 8089) are protected and only accessible via the proxy.
+- **Shared Memory**: The database container is configured with `shm_size: 256mb` to ensure stability during large maintenance operations like `VACUUM`.
+
+## 🧹 Maintenance
+
+- **Reclaiming Space**: Run `docker exec h1b-db vacuum analyze` periodically to keep the 20GB root volume healthy.
+- **Destroy Instance**:
+  ```bash
+  terraform destroy
+  ```

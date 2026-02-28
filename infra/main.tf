@@ -2,9 +2,22 @@ provider "aws" {
   region = var.aws_region
 }
 
+# --- Network logic variables ---
+locals {
+  create_vpc    = var.vpc_id == ""
+  vpc_id        = local.create_vpc ? aws_vpc.h1b_vpc[0].id : var.vpc_id
+
+  create_subnet = var.subnet_id == ""
+  subnet_id     = local.create_subnet ? aws_subnet.h1b_subnet[0].id : var.subnet_id
+
+  create_sg     = length(var.security_group_ids) == 0
+  sg_ids        = local.create_sg ? [aws_security_group.h1b_sg[0].id] : var.security_group_ids
+}
+
 # --- Network Resources ---
 
 resource "aws_vpc" "h1b_vpc" {
+  count                = local.create_vpc ? 1 : 0
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -15,7 +28,8 @@ resource "aws_vpc" "h1b_vpc" {
 }
 
 resource "aws_internet_gateway" "h1b_igw" {
-  vpc_id = aws_vpc.h1b_vpc.id
+  count  = local.create_vpc ? 1 : 0
+  vpc_id = local.vpc_id
 
   tags = {
     Name = "h1bfriend-igw"
@@ -23,7 +37,8 @@ resource "aws_internet_gateway" "h1b_igw" {
 }
 
 resource "aws_subnet" "h1b_subnet" {
-  vpc_id                  = aws_vpc.h1b_vpc.id
+  count                   = local.create_subnet ? 1 : 0
+  vpc_id                  = local.vpc_id
   cidr_block              = var.subnet_cidr
   map_public_ip_on_launch = true
 
@@ -33,11 +48,12 @@ resource "aws_subnet" "h1b_subnet" {
 }
 
 resource "aws_route_table" "h1b_rt" {
-  vpc_id = aws_vpc.h1b_vpc.id
+  count  = local.create_vpc ? 1 : 0
+  vpc_id = local.vpc_id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.h1b_igw.id
+    gateway_id = aws_internet_gateway.h1b_igw[0].id
   }
 
   tags = {
@@ -46,16 +62,18 @@ resource "aws_route_table" "h1b_rt" {
 }
 
 resource "aws_route_table_association" "h1b_rta" {
-  subnet_id      = aws_subnet.h1b_subnet.id
-  route_table_id = aws_route_table.h1b_rt.id
+  count          = local.create_subnet && local.create_vpc ? 1 : 0
+  subnet_id      = local.subnet_id
+  route_table_id = aws_route_table.h1b_rt[0].id
 }
 
 # --- Security Group ---
 
 resource "aws_security_group" "h1b_sg" {
+  count       = local.create_sg ? 1 : 0
   name        = "h1bfriend-sg"
   description = "Allow HTTP, HTTPS, SSH, and App ports"
-  vpc_id      = aws_vpc.h1b_vpc.id
+  vpc_id      = local.vpc_id
 
   ingress {
     description = "SSH"
@@ -127,10 +145,15 @@ data "aws_ami" "amazon_linux_2023" {
 resource "aws_instance" "h1b_server" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = var.instance_type
-  subnet_id     = aws_subnet.h1b_subnet.id
+  subnet_id     = local.subnet_id
   
-  vpc_security_group_ids = [aws_security_group.h1b_sg.id]
+  vpc_security_group_ids = local.sg_ids
   key_name               = var.key_name != "" ? var.key_name : null
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
 
   user_data = <<-EOF
               #!/bin/bash

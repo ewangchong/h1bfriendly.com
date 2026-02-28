@@ -22,6 +22,14 @@ The web app will run on `http://localhost:3000`.
 The `next.config.ts` is configured for `output: "standalone"` to ensure minimal image sizes when built as a Docker container.
 
 To build manually:
+
 ```bash
 npm run build
 ```
+
+## 🎨 Notable Features
+
+- **Dynamic Year Filtering**: The UI automatically detects available data years per filter state.
+- **Global Loading State**: Visual feedback via a CSS spinner during data fetches.
+- **Mobile Responsive**: Fully optimized for mobile and desktop viewing.
+- **Null Safety**: Comprehensive `COALESCE` and null-check logic to prevent UI crashes on sparse datasets.
