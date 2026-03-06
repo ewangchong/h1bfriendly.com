@@ -32,9 +32,4 @@ jobs:
           docker compose run --rm migrate
           docker compose up -d --build
 
-          curl --fail --silent --show-error --retry 20 --retry-delay 2 --retry-all-errors \
-            http://127.0.0.1:8089/health >/dev/null
-
-          curl --fail --silent --show-error --insecure --retry 20 --retry-delay 2 --retry-all-errors \
-            --resolve h1bfriend.com:443:127.0.0.1 \
-            https://h1bfriend.com/api/v1/meta/years >/dev/null
+          ./scripts/warm-cache.sh
