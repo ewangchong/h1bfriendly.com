@@ -12,7 +12,10 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on:
+      - self-hosted
+      - ec2
+      - prod
     timeout-minutes: 30
 
     steps:
