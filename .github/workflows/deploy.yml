@@ -12,28 +12,22 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 30
 
     steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || '22' }}
-          script_stop: true
-          script: |
-            set -euo pipefail
+      - name: Deploy on self-hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
 
-            cd ~/h1bfriend
+          cd ~/h1bfriend
 
-            git fetch origin main
-            git reset --hard origin/main
+          git fetch origin main
+          git reset --hard origin/main
 
-            docker compose run --rm migrate
-            docker compose up -d --build
+          docker compose run --rm migrate
+          docker compose up -d --build
 
-            curl --fail --silent --show-error http://127.0.0.1:8089/health >/dev/null
-            curl --fail --silent --show-error --insecure https://h1bfriend.com/api/v1/meta/years >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8089/health >/dev/null
+          curl --fail --silent --show-error --insecure https://h1bfriend.com/api/v1/meta/years >/dev/null
