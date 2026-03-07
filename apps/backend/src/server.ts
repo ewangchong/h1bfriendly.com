@@ -15,7 +15,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().min(1).max(120).default(20),
-  CHAT_ADMIN_TOKEN: z.string().optional(),
+  ADMIN_TOKEN: z.string().optional(),
 });
 
 const env = envSchema.parse({
@@ -24,7 +24,7 @@ const env = envSchema.parse({
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: process.env.GEMINI_MODEL,
   CHAT_RATE_LIMIT_PER_MIN: process.env.CHAT_RATE_LIMIT_PER_MIN,
-  CHAT_ADMIN_TOKEN: process.env.CHAT_ADMIN_TOKEN,
+  ADMIN_TOKEN: process.env.ADMIN_TOKEN,
 });
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -266,6 +266,16 @@ function page<T>(content: T[], pageNum: number, size: number, total: number): Pa
   };
 }
 
+function adminToken() {
+  return env.ADMIN_TOKEN;
+}
+
+function hasValidAdminToken(req: any) {
+  const token = adminToken();
+  const providedToken = String(req.headers['x-admin-token'] || '');
+  return Boolean(token) && providedToken === token;
+}
+
 async function logChatEvent(event: {
   clientIp: string;
   requestedYear?: number;
@@ -317,9 +327,21 @@ app.get('/api/v1/chat/status', async () => {
   });
 });
 
+app.post('/api/v1/admin/login', async (req, reply) => {
+  const token = adminToken();
+  const body = z.object({
+    token: z.string().min(1),
+  }).parse(req.body ?? {});
+
+  if (!token || body.token !== token) {
+    return reply.code(401).send({ success: false, error: 'unauthorized', message: 'Invalid admin token.' });
+  }
+
+  return reply.send(ok({ authenticated: true }));
+});
+
 app.get('/api/v1/chat/logs', async (req, reply) => {
-  const providedToken = String(req.headers['x-admin-token'] || '');
-  if (!env.CHAT_ADMIN_TOKEN || providedToken !== env.CHAT_ADMIN_TOKEN) {
+  if (!hasValidAdminToken(req)) {
     return reply.code(401).send({ success: false, error: 'unauthorized', message: 'Admin token required.' });
   }
 
@@ -357,6 +379,141 @@ app.get('/api/v1/chat/logs', async (req, reply) => {
        answer,
        transcript
      FROM chat_logs
+     ${whereSql}
+     ORDER BY created_at DESC
+     LIMIT ${limitParam}
+     OFFSET ${offsetParam}`,
+    params
+  );
+
+  return reply.send(ok(
+    page(rowsRes.rows, q.page, q.size, totalRes.rows[0]?.total ?? 0)
+  ));
+});
+
+app.post('/api/v1/job-alert-subscriptions', async (req, reply) => {
+  const body = z.object({
+    email: z.string().trim().email().max(320),
+    keywords: z.string().trim().max(120).optional().or(z.literal('')),
+    state: z.string().trim().toUpperCase().max(2).optional().or(z.literal('')),
+    title: z.string().trim().max(120).optional().or(z.literal('')),
+    frequency: z.enum(['daily', 'weekly']).default('weekly'),
+    source_page: z.string().trim().max(120).optional().or(z.literal('')),
+  }).parse(req.body ?? {});
+
+  const normalized = {
+    email: body.email.toLowerCase(),
+    keywords: body.keywords?.trim() || null,
+    state: body.state?.trim() || null,
+    title: body.title?.trim() || null,
+    frequency: body.frequency,
+    source_page: body.source_page?.trim() || null,
+  };
+
+  const existingRes = await pool.query(
+    `SELECT id
+     FROM job_alert_subscriptions
+     WHERE lower(email) = lower($1)
+       AND coalesce(lower(keywords), '') = coalesce(lower($2), '')
+       AND coalesce(upper(state), '') = coalesce(upper($3), '')
+       AND coalesce(lower(title), '') = coalesce(lower($4), '')
+       AND frequency = $5
+     LIMIT 1`,
+    [
+      normalized.email,
+      normalized.keywords,
+      normalized.state,
+      normalized.title,
+      normalized.frequency,
+    ]
+  );
+
+  if (existingRes.rows[0]?.id) {
+    await pool.query(
+      `UPDATE job_alert_subscriptions
+       SET active = true,
+           source_page = coalesce($2, source_page),
+           updated_at = now()
+       WHERE id = $1`,
+      [existingRes.rows[0].id, normalized.source_page]
+    );
+
+    return reply.send(ok({
+      subscribed: true,
+      existing: true,
+      id: existingRes.rows[0].id,
+    }, 'Subscription already existed and was reactivated.'));
+  }
+
+  const insertRes = await pool.query<{ id: string }>(
+    `INSERT INTO job_alert_subscriptions (
+       email, keywords, state, title, frequency, source_page
+     ) VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id`,
+    [
+      normalized.email,
+      normalized.keywords,
+      normalized.state,
+      normalized.title,
+      normalized.frequency,
+      normalized.source_page,
+    ]
+  );
+
+  return reply.send(ok({
+    subscribed: true,
+    existing: false,
+    id: insertRes.rows[0]?.id ?? null,
+  }, 'Subscription created.'));
+});
+
+app.get('/api/v1/admin/job-alert-subscriptions', async (req, reply) => {
+  if (!hasValidAdminToken(req)) {
+    return reply.code(401).send({ success: false, error: 'unauthorized', message: 'Admin token required.' });
+  }
+
+  reply.header('Cache-Control', 'private, no-store, max-age=0');
+
+  const q = z.object({
+    page: z.coerce.number().int().min(0).default(0),
+    size: z.coerce.number().int().min(1).max(200).default(50),
+    active: z.coerce.boolean().optional(),
+  }).parse(req.query ?? {});
+
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+
+  if (q.active !== undefined) {
+    params.push(q.active);
+    whereClauses.push(`active = $${params.length}`);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const totalRes = await pool.query<{ total: number }>(
+    `SELECT COUNT(*)::int AS total FROM job_alert_subscriptions ${whereSql}`,
+    params
+  );
+
+  params.push(q.size);
+  const limitParam = `$${params.length}`;
+  params.push(q.page * q.size);
+  const offsetParam = `$${params.length}`;
+
+  const rowsRes = await pool.query(
+    `SELECT
+       id,
+       created_at,
+       updated_at,
+       email,
+       keywords,
+       state,
+       title,
+       frequency,
+       active,
+       source_page,
+       last_sent_at
+     FROM job_alert_subscriptions
      ${whereSql}
      ORDER BY created_at DESC
      LIMIT ${limitParam}

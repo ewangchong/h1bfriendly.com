@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import JobAlertSignup from './JobAlertSignup';
 
 export const metadata: Metadata = {
   title: 'H1B Sponsorship Jobs',
@@ -42,6 +43,24 @@ export default function JobsPage() {
             Read Blog
           </a>
         </div>
+      </div>
+
+      <div
+        style={{
+          margin: '18px auto 10px',
+          padding: 18,
+          borderRadius: 16,
+          border: '1px solid #dbeafe',
+          background: 'linear-gradient(180deg, #eff6ff, #ffffff)',
+          boxShadow: '0 1px 0 rgba(0,0,0,0.02)',
+          maxWidth: 920,
+        }}
+      >
+        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.02em' }}>Get H1B job alerts by email</div>
+        <p style={{ margin: '8px 0 14px', color: '#555', lineHeight: 1.6 }}>
+          Save your email plus optional title, keyword, and state filters. We will store the subscription now so the backend can power future outbound job alert campaigns.
+        </p>
+        <JobAlertSignup />
       </div>
     </div>
   );
