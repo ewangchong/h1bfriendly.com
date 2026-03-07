@@ -23,9 +23,10 @@ graph LR
         Caddy -->|Reverse Proxy| Web[Next.js Frontend]
         Web -->|Rankings / Companies / Titles API Calls| Backend[Fastify Backend]
         Web -->|Chat Status + Chat Requests| Backend
-        Backend -->|Query / Aggregate| DB[PostgreSQL 16]
+        Backend -->|Query / Aggregate| DB[(PostgreSQL 16)]
         Backend -->|Store / Get Cached Responses| Cache[LRU Cache]
         Backend -->|Generate Content| Gemini[Gemini API]
+        Backend -->|Persist Chat Logs| ChatLogs[(chat_logs table)]
     end
 
     subgraph Pipeline [Data Ingest]
