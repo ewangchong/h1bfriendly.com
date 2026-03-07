@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { blogPosts } from './posts';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -28,37 +29,6 @@ const featuredTopics = [
     href: '/',
     accent: '#FEF3C7',
     tone: '#B45309',
-  },
-] as const;
-
-const posts = [
-  {
-    slug: '#',
-    title: 'How to read H1B sponsor data without fooling yourself',
-    description: 'Use filing counts, approval rates, and title-level trends without over-reading one noisy year.',
-    status: 'Coming soon',
-    category: 'Primer',
-  },
-  {
-    slug: '#',
-    title: 'Best H1B sponsors for software engineers',
-    description: 'A ranked, data-backed look at which companies consistently sponsor software engineering roles.',
-    status: 'Coming soon',
-    category: 'Role Guide',
-  },
-  {
-    slug: '#',
-    title: 'Which states still have the strongest H1B demand',
-    description: 'A state-by-state breakdown of sponsor concentration and role demand.',
-    status: 'Coming soon',
-    category: 'Market Map',
-  },
-  {
-    slug: '#',
-    title: 'How to tell whether a company files broadly or only for niche roles',
-    description: 'A practical framework for separating broad-based sponsors from one-off outliers.',
-    status: 'Queued',
-    category: 'Company Guide',
   },
 ] as const;
 
@@ -165,7 +135,7 @@ export default function BlogPage() {
       </section>
 
       <div style={{ display: 'grid', gap: 14, marginTop: 18 }}>
-        {posts.map((post) => (
+        {blogPosts.map((post) => (
           <article
             key={post.title}
             style={{
@@ -204,11 +174,20 @@ export default function BlogPage() {
                     {post.status}
                   </span>
                 </div>
-                <h2 style={{ margin: '12px 0 0', fontSize: 22, letterSpacing: '-0.02em' }}>{post.title}</h2>
+                <h2 style={{ margin: '12px 0 0', fontSize: 22, letterSpacing: '-0.02em' }}>
+                  <Link href={`/blog/${post.slug}`} style={{ textDecoration: 'none' }}>
+                    {post.title}
+                  </Link>
+                </h2>
               </div>
-              <div style={{ color: '#9CA3AF', fontSize: 13, fontWeight: 700 }}>Queued</div>
+              <div style={{ color: '#9CA3AF', fontSize: 13, fontWeight: 700 }}>{post.readingTime}</div>
             </div>
             <p style={{ margin: '10px 0 0', color: '#5B6470', lineHeight: 1.7 }}>{post.description}</p>
+            <div style={{ marginTop: 12 }}>
+              <Link href={`/blog/${post.slug}`} style={{ fontSize: 14, fontWeight: 800, textDecoration: 'none', color: '#1D4ED8' }}>
+                {'Read article ->'}
+              </Link>
+            </div>
           </article>
         ))}
       </div>
