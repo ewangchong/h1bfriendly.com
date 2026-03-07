@@ -21,14 +21,26 @@ graph LR
 
     subgraph AWS_EC2 [AWS Cloud]
         Caddy -->|Reverse Proxy| Web[Next.js Frontend]
-        Web -->|API Call| Backend[Fastify Backend]
-        Backend -->|Query| DB[PostgreSQL 16]
-        Backend -->|Store/Get| Cache[LRU Cache]
+        Web -->|Rankings / Companies / Titles API Calls| Backend[Fastify Backend]
+        Web -->|Chat Status + Chat Requests| Backend
+        Backend -->|Query / Aggregate| DB[PostgreSQL 16]
+        Backend -->|Store / Get Cached Responses| Cache[LRU Cache]
+        Backend -->|Generate Content| Gemini[Gemini API]
     end
 
     subgraph Pipeline [Data Ingest]
         DOL[DOL LCA Data] -->|Python ETL| DB
     end
+
+    subgraph UX [User Experience]
+        HomeModal[Homepage AI Chat Modal]
+        ChatPage[Dedicated /chat Page]
+    end
+
+    User --> HomeModal
+    User --> ChatPage
+    HomeModal --> Web
+    ChatPage --> Web
 ```
 
 ---
@@ -57,7 +69,38 @@ Even with optimized SQL, concurrent dashboard refreshes can peg the CPU. We impl
 - **`apps/etl`**: Python-based high-speed ingest pipeline using `Pandas` and `Psycopg2`.
 - **`apps/backend`**: Fastify REST API providing normalized H1B analytics.
 - **`apps/web`**: Next.js App Router frontend for data visualization and SEO.
-- **`infra/`**: Terraform configurations for idempotent AWS provisioning.
+- **`infra/`**: Terraform configurations for provisioning the AWS networking and EC2 host.
+- **`scripts/`**: Operational helpers such as cache warmup and deployment-side maintenance utilities.
+- **`docker-compose.yml`**: Local and single-host production orchestration for PostgreSQL, backend, web, migrations, and Caddy.
+- **`Caddyfile`**: Reverse proxy and HTTPS entrypoint configuration for the public site.
+
+---
+
+## 🤖 AI Chat
+
+The product includes an H1B data assistant that is available in two places:
+
+- The dedicated `/chat` page
+- A homepage modal launcher that opens on top of the rankings page with a blurred backdrop
+
+The assistant is not a generic chatbot. It is grounded with RAG-style context generated from the local H1B dataset, including:
+
+- The selected or latest fiscal year
+- Year-level totals for filings, approvals, and average salary
+- Top companies for the selected year
+- Top job titles for the selected year
+- Question-relevant employer and title slices pulled from the database
+
+Current behavior and limits:
+
+- The assistant answers in English
+- It is intended for sponsor trends, approval patterns, salary benchmarks, and company/title comparisons
+- It should avoid making factual claims outside the provided dataset context
+- Chat is disabled unless `GEMINI_API_KEY` is configured
+- The recommended default model is `gemini-2.5-flash`
+- Backend rate limiting is controlled by `CHAT_RATE_LIMIT_PER_MIN`
+
+When Gemini fails upstream, the API now returns the upstream model/quota message directly so production issues are easier to diagnose.
 
 ---
 
@@ -68,28 +111,39 @@ Even with optimized SQL, concurrent dashboard refreshes can peg the CPU. We impl
 - Docker & Docker Compose
 - Node.js 20+
 
-### 2. Launch Stack
+### 2. Configure Environment
+
+Create a root `.env` file before launching the stack:
+
+```bash
+POSTGRES_PASSWORD=change_me
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+CHAT_RATE_LIMIT_PER_MIN=20
+```
+
+`GEMINI_API_KEY` is optional if you do not want AI chat enabled.
+
+### 3. Launch Stack
 
 ```bash
 # Clone the repository
 git clone https://github.com/ewangchong/h1bfriendly.com.git
 cd h1bfriendly.com
 
-# Start services
-# If you want /chat enabled, export GEMINI_API_KEY before this step.
 docker compose up -d
 ```
 
 `docker compose` will run a one-shot `migrate` job before the backend starts, so required database indexes are created automatically on fresh environments.
 
-The chat endpoint is disabled unless `GEMINI_API_KEY` is present in the shell environment used for `docker compose up -d --build`.
+The chat endpoint is disabled unless `GEMINI_API_KEY` is present in the root `.env` file or shell environment used for `docker compose up -d --build`.
 The recommended default model is `gemini-2.5-flash`.
 
-### 3. Ingest Data
+### 4. Ingest Data
 
 Follow the instructions in `apps/etl/README.md` to load the latest DOL datasets into your local database.
 
-### 4. Run Migrations Manually
+### 5. Run Migrations Manually
 
 If you need to apply database changes without bringing up the full stack:
 

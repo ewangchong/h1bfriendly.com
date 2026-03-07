@@ -18,6 +18,14 @@ type ChatClientProps = {
   onClose?: () => void;
 };
 
+const SUGGESTED_QUESTIONS = [
+  'Which companies had the most H1B approvals in the latest year?',
+  'Which job titles show the highest average salaries?',
+  'Compare Amazon and Google for H1B approvals and salary trends.',
+  'What changed in H1B sponsor rankings between 2024 and 2025?',
+  'Which companies are strongest for software engineer sponsorship?',
+] as const;
+
 export default function ChatClient({ mode = 'page', onClose }: ChatClientProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -75,8 +83,8 @@ export default function ChatClient({ mode = 'page', onClose }: ChatClientProps) 
     [chatStatus?.enabled, input, loading, statusLoading]
   );
 
-  async function onSend() {
-    const text = input.trim();
+  async function onSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
     if (!text || loading || chatStatus?.enabled !== true) return;
 
     const nextMessages = [...messages, { role: 'user' as const, text }];
@@ -155,6 +163,23 @@ export default function ChatClient({ mode = 'page', onClose }: ChatClientProps) 
           placeholder="e.g. 2025"
           className="chat-year-input"
         />
+      </div>
+
+      <div className="chat-suggestions">
+        <div className="chat-suggestions-label">Try a question</div>
+        <div className="chat-suggestions-grid">
+          {SUGGESTED_QUESTIONS.map((question) => (
+            <button
+              key={question}
+              type="button"
+              className="chat-suggestion-chip"
+              onClick={() => void onSend(question)}
+              disabled={loading || statusLoading || chatStatus?.enabled !== true}
+            >
+              {question}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={`chat-messages ${isModal ? 'chat-messages-modal' : ''}`}>

@@ -232,6 +232,40 @@ a {
   margin-bottom: 12px;
 }
 
+.chat-suggestions {
+  margin-bottom: 14px;
+}
+
+.chat-suggestions-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #52525b;
+}
+
+.chat-suggestions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-suggestion-chip {
+  border: 1px solid #dbe4ff;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.chat-suggestion-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .chat-label {
   font-size: 13px;
   color: #666;

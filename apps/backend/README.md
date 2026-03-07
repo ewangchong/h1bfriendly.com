@@ -60,6 +60,32 @@ The root `docker-compose.yml` also runs this migration step automatically before
 - `GET /api/v1/debug/cache`: Monitor LRU cache usage and hits.
 - `POST /api/v1/chat`: Gemini-powered H1B chatbot endpoint with database-grounded RAG context. Upstream quota/model errors are returned in the response message for easier debugging.
 
+## Chat Architecture
+
+The chat endpoint is designed as a constrained H1B data assistant rather than an open-ended assistant.
+
+For each request, the backend:
+
+1. Validates the chat transcript and optional fiscal year.
+2. Builds a compact RAG context from PostgreSQL using the current H1B dataset.
+3. Sends the context plus the chat transcript to Gemini.
+4. Returns the answer and exposes upstream model/quota failures in the response message.
+
+The RAG context currently includes:
+
+- Dataset year used
+- Year totals: filings, approvals, average salary
+- Top companies for the year
+- Top job titles for the year
+- Question-relevant company/title slices based on token matching
+
+Operational notes:
+
+- Chat is unavailable when `GEMINI_API_KEY` is missing.
+- `GET /api/v1/chat/status` is used by the frontend to disable the chat UI before submit.
+- Requests are rate-limited in-memory per IP using `CHAT_RATE_LIMIT_PER_MIN`.
+- The default model is `gemini-2.5-flash`.
+
 ## Observability
 
 You can monitor the internal state of the cache at:
