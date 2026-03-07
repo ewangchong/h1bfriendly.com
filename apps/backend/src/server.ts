@@ -278,6 +278,47 @@ function page<T>(content: T[], pageNum: number, size: number, total: number): Pa
   };
 }
 
+async function logChatEvent(event: {
+  clientIp: string;
+  requestedYear?: number;
+  model: string;
+  success: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+  latestUserPrompt: string;
+  answer?: string;
+  transcript: Array<{ role: 'user' | 'assistant'; text: string }>;
+}) {
+  try {
+    await pool.query(
+      `INSERT INTO chat_logs (
+         client_ip,
+         requested_year,
+         model,
+         success,
+         error_code,
+         error_message,
+         latest_user_prompt,
+         answer,
+         transcript
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)`,
+      [
+        event.clientIp,
+        event.requestedYear ?? null,
+        event.model,
+        event.success,
+        event.errorCode ?? null,
+        event.errorMessage ?? null,
+        event.latestUserPrompt,
+        event.answer ?? null,
+        JSON.stringify(event.transcript),
+      ]
+    );
+  } catch (error) {
+    app.log.error({ error }, 'Failed to persist chat log');
+  }
+}
+
 app.get('/health', async () => ({ ok: true }));
 
 app.get('/api/v1/chat/status', async () => {
@@ -288,14 +329,88 @@ app.get('/api/v1/chat/status', async () => {
   });
 });
 
+app.get('/api/v1/chat/logs', async (req, reply) => {
+  const q = z.object({
+    page: z.coerce.number().int().min(0).default(0),
+    size: z.coerce.number().int().min(1).max(200).default(50),
+    success: z.coerce.boolean().optional(),
+  }).parse(req.query ?? {});
+
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+
+  if (q.success !== undefined) {
+    params.push(q.success);
+    whereClauses.push(`success = $${params.length}`);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const totalRes = await pool.query<{ total: number }>(
+    `SELECT COUNT(*)::int AS total FROM chat_logs ${whereSql}`,
+    params
+  );
+
+  params.push(q.size);
+  const limitParam = `$${params.length}`;
+  params.push(q.page * q.size);
+  const offsetParam = `$${params.length}`;
+
+  const rowsRes = await pool.query(
+    `SELECT
+       id,
+       created_at,
+       client_ip,
+       requested_year,
+       model,
+       success,
+       error_code,
+       error_message,
+       latest_user_prompt,
+       answer,
+       transcript
+     FROM chat_logs
+     ${whereSql}
+     ORDER BY created_at DESC
+     LIMIT ${limitParam}
+     OFFSET ${offsetParam}`,
+    params
+  );
+
+  return sendCachedOk(
+    reply,
+    page(rowsRes.rows, q.page, q.size, totalRes.rows[0]?.total ?? 0)
+  );
+});
+
 app.post('/api/v1/chat', async (req, reply) => {
   const ip = req.ip || 'unknown';
   if (isRateLimited(ip)) {
+    await logChatEvent({
+      clientIp: ip,
+      requestedYear: undefined,
+      model: env.GEMINI_MODEL,
+      success: false,
+      errorCode: 'rate_limited',
+      errorMessage: 'Too many chat requests. Please try again in a minute.',
+      latestUserPrompt: '[rate limited before body parse]',
+      transcript: [],
+    });
     return reply.code(429).send({ success: false, error: 'rate_limited', message: 'Too many chat requests. Please try again in a minute.' });
   }
 
   if (!env.GEMINI_API_KEY) {
     req.log.error('GEMINI_API_KEY is missing');
+    await logChatEvent({
+      clientIp: ip,
+      requestedYear: undefined,
+      model: env.GEMINI_MODEL,
+      success: false,
+      errorCode: 'misconfigured',
+      errorMessage: 'Chat is not configured on the server.',
+      latestUserPrompt: '[chat misconfigured before body parse]',
+      transcript: [],
+    });
     return reply.code(500).send({ success: false, error: 'misconfigured', message: 'Chat is not configured on the server.' });
   }
 
@@ -306,6 +421,16 @@ app.post('/api/v1/chat', async (req, reply) => {
 
   const latestUserPrompt = [...body.messages].reverse().find((m) => m.role === 'user')?.text;
   if (!latestUserPrompt) {
+    await logChatEvent({
+      clientIp: ip,
+      requestedYear: body.year,
+      model: env.GEMINI_MODEL,
+      success: false,
+      errorCode: 'invalid_input',
+      errorMessage: 'At least one user message is required.',
+      latestUserPrompt: '[missing user message]',
+      transcript: body.messages,
+    });
     return reply.code(400).send({ success: false, error: 'invalid_input', message: 'At least one user message is required.' });
   }
 
@@ -350,6 +475,16 @@ app.post('/api/v1/chat', async (req, reply) => {
     const errText = await geminiResponse.text();
     req.log.error({ status: geminiResponse.status, body: errText }, 'Gemini API failed');
     const upstreamMessage = extractUpstreamErrorMessage(errText);
+    await logChatEvent({
+      clientIp: ip,
+      requestedYear: body.year,
+      model: env.GEMINI_MODEL,
+      success: false,
+      errorCode: 'llm_upstream_error',
+      errorMessage: upstreamMessage || 'Gemini API request failed.',
+      latestUserPrompt,
+      transcript: body.messages,
+    });
     return reply.code(502).send({
       success: false,
       error: 'llm_upstream_error',
@@ -361,8 +496,28 @@ app.post('/api/v1/chat', async (req, reply) => {
   const answer = geminiJson?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || '').join('').trim();
 
   if (!answer) {
+    await logChatEvent({
+      clientIp: ip,
+      requestedYear: body.year,
+      model: env.GEMINI_MODEL,
+      success: false,
+      errorCode: 'empty_llm_response',
+      errorMessage: 'Gemini returned an empty response.',
+      latestUserPrompt,
+      transcript: body.messages,
+    });
     return reply.code(502).send({ success: false, error: 'empty_llm_response', message: 'Gemini returned an empty response.' });
   }
+
+  await logChatEvent({
+    clientIp: ip,
+    requestedYear: body.year,
+    model: env.GEMINI_MODEL,
+    success: true,
+    latestUserPrompt,
+    answer,
+    transcript: body.messages,
+  });
 
   return reply.send(ok({
     answer,

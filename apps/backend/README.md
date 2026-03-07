@@ -53,6 +53,7 @@ The root `docker-compose.yml` also runs this migration step automatically before
 
 - `GET /health`: Healthcheck.
 - `GET /api/v1/chat/status`: Returns whether chat is enabled plus the configured Gemini model and rate limit.
+- `GET /api/v1/chat/logs`: Returns recent chat logs in reverse chronological order, with pagination and optional `success=true|false` filtering.
 - `GET /api/v1/meta/years`: Retrieve available fiscal years.
 - `GET /api/v1/companies`: Paginated company list and search.
 - `GET /api/v1/companies/slug/:slug`: Fetch company details by SEO-friendly slug.
