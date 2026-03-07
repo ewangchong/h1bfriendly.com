@@ -28,7 +28,7 @@ services:
       - PORT=8089
       - NODE_ENV=production
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
       - CHAT_RATE_LIMIT_PER_MIN=${CHAT_RATE_LIMIT_PER_MIN:-20}
     depends_on:
       migrate:

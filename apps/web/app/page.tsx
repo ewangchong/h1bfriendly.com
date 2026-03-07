@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getAvailableYears, getRankings, getRankingsSummary, getTitles } from '@/lib/h1bApi';
 import RankingsControls from './RankingsControls';
 import RankingsChart from './RankingsChart';
+import HomeChatLauncher from './HomeChatLauncher';
 
 export const metadata: Metadata = {
   title: 'H1B Sponsor Rankings & Database | Find H1B Friendly Jobs',
@@ -84,6 +85,7 @@ export default async function RankingsPage({
 
   return (
     <div>
+      <HomeChatLauncher />
       <div style={{ textAlign: 'center', padding: '32px 16px 16px' }}>
         <h1 style={{
           margin: 0,

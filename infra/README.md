@@ -32,8 +32,11 @@ This Terraform configuration provisions a low-cost, production-ready environment
    ```bash
    ssh -i your-key.pem ec2-user@your-ip
    cd h1bfriend
+   export GEMINI_API_KEY=your_actual_key_here
    docker compose up -d --build
    ```
+
+   `GEMINI_API_KEY` is required for the `/chat` feature. Without it, the backend will return `Chat is not configured on the server.`
 
 ## 🔒 Security & Networking
 

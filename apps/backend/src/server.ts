@@ -12,7 +12,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(8089),
   DATABASE_URL: z.string().default('postgres://h1b:change_me@127.0.0.1:5432/h1bfriend'),
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().min(1).max(120).default(20),
 });
 
@@ -235,6 +235,35 @@ function ok<T>(data: T, message?: string) {
   };
 }
 
+function extractUpstreamErrorMessage(raw: string) {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const details = parsed?.error?.details;
+    const quotaMessage = Array.isArray(details)
+      ? details
+          .flatMap((detail: any) => Array.isArray(detail?.violations) ? detail.violations : [])
+          .map((violation: any) => {
+            const metric = violation?.quotaMetric;
+            const quotaId = violation?.quotaId;
+            const model = violation?.quotaDimensions?.model;
+            if (!metric && !quotaId && !model) return null;
+            return [metric, quotaId, model ? `model=${model}` : null].filter(Boolean).join(' | ');
+          })
+          .filter(Boolean)
+      : [];
+
+    const message = parsed?.error?.message;
+    if (quotaMessage.length > 0) {
+      return `${message} (${quotaMessage.join('; ')})`;
+    }
+    return message || raw;
+  } catch {
+    return raw;
+  }
+}
+
 function page<T>(content: T[], pageNum: number, size: number, total: number): PageResponse<T> {
   const totalPages = Math.max(1, Math.ceil(total / size));
   return {
@@ -250,6 +279,14 @@ function page<T>(content: T[], pageNum: number, size: number, total: number): Pa
 }
 
 app.get('/health', async () => ({ ok: true }));
+
+app.get('/api/v1/chat/status', async () => {
+  return ok({
+    enabled: Boolean(env.GEMINI_API_KEY),
+    model: env.GEMINI_MODEL,
+    rate_limit_per_min: env.CHAT_RATE_LIMIT_PER_MIN,
+  });
+});
 
 app.post('/api/v1/chat', async (req, reply) => {
   const ip = req.ip || 'unknown';
@@ -312,7 +349,12 @@ app.post('/api/v1/chat', async (req, reply) => {
   if (!geminiResponse.ok) {
     const errText = await geminiResponse.text();
     req.log.error({ status: geminiResponse.status, body: errText }, 'Gemini API failed');
-    return reply.code(502).send({ success: false, error: 'llm_upstream_error', message: 'Gemini API request failed.' });
+    const upstreamMessage = extractUpstreamErrorMessage(errText);
+    return reply.code(502).send({
+      success: false,
+      error: 'llm_upstream_error',
+      message: upstreamMessage || 'Gemini API request failed.',
+    });
   }
 
   const geminiJson: any = await geminiResponse.json();

@@ -22,7 +22,7 @@ This is a high-performance REST API built with Fastify and Node.js, designed to 
 
    For chatbot support, also set:
    - `GEMINI_API_KEY`
-   - `GEMINI_MODEL` (default: `gemini-2.0-flash`)
+   - `GEMINI_MODEL` (default: `gemini-2.5-flash`)
    - `CHAT_RATE_LIMIT_PER_MIN` (default: `20`)
 
 2. Install dependencies:

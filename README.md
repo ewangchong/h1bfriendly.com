@@ -74,10 +74,13 @@ git clone https://github.com/ewangchong/h1bfriendly.com.git
 cd h1bfriendly.com
 
 # Start services
+# If you want /chat enabled, export GEMINI_API_KEY before this step.
 docker compose up -d
 ```
 
 `docker compose` will run a one-shot `migrate` job before the backend starts, so required database indexes are created automatically on fresh environments.
+
+The chat endpoint is disabled unless `GEMINI_API_KEY` is present in the shell environment used for `docker compose up -d --build`.
 
 ### 3. Ingest Data
 
