@@ -6,6 +6,7 @@ const { Pool } = pg;
 import { z } from 'zod';
 import { LRUCache } from 'lru-cache';
 import { slugify } from './slug.js';
+import { buildChatLogsWhereClause, extractUpstreamErrorMessage } from './chatUtils.js';
 
 
 const envSchema = z.object({
@@ -251,35 +252,6 @@ function ok<T>(data: T, message?: string) {
   };
 }
 
-function extractUpstreamErrorMessage(raw: string) {
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    const details = parsed?.error?.details;
-    const quotaMessage = Array.isArray(details)
-      ? details
-          .flatMap((detail: any) => Array.isArray(detail?.violations) ? detail.violations : [])
-          .map((violation: any) => {
-            const metric = violation?.quotaMetric;
-            const quotaId = violation?.quotaId;
-            const model = violation?.quotaDimensions?.model;
-            if (!metric && !quotaId && !model) return null;
-            return [metric, quotaId, model ? `model=${model}` : null].filter(Boolean).join(' | ');
-          })
-          .filter(Boolean)
-      : [];
-
-    const message = parsed?.error?.message;
-    if (quotaMessage.length > 0) {
-      return `${message} (${quotaMessage.join('; ')})`;
-    }
-    return message || raw;
-  } catch {
-    return raw;
-  }
-}
-
 function page<T>(content: T[], pageNum: number, size: number, total: number): PageResponse<T> {
   const totalPages = Math.max(1, Math.ceil(total / size));
   return {
@@ -359,15 +331,7 @@ app.get('/api/v1/chat/logs', async (req, reply) => {
     success: z.coerce.boolean().optional(),
   }).parse(req.query ?? {});
 
-  const whereClauses: string[] = [];
-  const params: any[] = [];
-
-  if (q.success !== undefined) {
-    params.push(q.success);
-    whereClauses.push(`success = $${params.length}`);
-  }
-
-  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const { whereSql, params } = buildChatLogsWhereClause(q.success);
 
   const totalRes = await pool.query<{ total: number }>(
     `SELECT COUNT(*)::int AS total FROM chat_logs ${whereSql}`,

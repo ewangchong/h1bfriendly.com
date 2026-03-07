@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Deploy on self-hosted runner
+      - name: Sync repository
         shell: bash
         run: |
           set -euo pipefail
@@ -29,7 +29,98 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
+      - name: Run database migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd ~/h1bfriend
+
           docker compose run --rm migrate
+
+      - name: Rebuild and restart services
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd ~/h1bfriend
+
           docker compose up -d --build
 
+      - name: Verify deployment health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd ~/h1bfriend
+
+          curl --fail --silent --show-error http://127.0.0.1:8089/health >/dev/null
+          curl --fail --silent --show-error --insecure \
+            --resolve h1bfriend.com:443:127.0.0.1 \
+            https://h1bfriend.com/api/v1/meta/years >/dev/null
+
+      - name: Warm caches (optional)
+        id: warm_cache
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd ~/h1bfriend
+
           ./scripts/warm-cache.sh
+
+      - name: Warn if cache warmup failed
+        if: ${{ steps.warm_cache.outcome == 'failure' }}
+        shell: bash
+        run: |
+          echo "::warning title=Cache warmup failed::scripts/warm-cache.sh failed, but deployment is continuing."
+
+      - name: Performance smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SITE_URL="https://h1bfriend.com"
+          HOST_NAME="h1bfriend.com"
+          MAX_TTFB_SECONDS="${MAX_TTFB_SECONDS:-2.5}"
+          MAX_TOTAL_SECONDS="${MAX_TOTAL_SECONDS:-8}"
+
+          check_url() {
+            local label="$1"
+            local url="$2"
+            local metrics
+            metrics="$(
+              curl --silent --show-error --insecure \
+                --resolve "${HOST_NAME}:443:127.0.0.1" \
+                --output /dev/null \
+                --write-out "%{http_code} %{time_starttransfer} %{time_total}" \
+                "${url}"
+            )"
+
+            local code ttfb total
+            read -r code ttfb total <<<"${metrics}"
+
+            echo "${label}: code=${code} ttfb=${ttfb}s total=${total}s"
+
+            if [[ "${code}" != "200" ]]; then
+              echo "::error title=Performance smoke test failed::${label} returned HTTP ${code}"
+              exit 1
+            fi
+
+            awk -v ttfb="${ttfb}" -v total="${total}" -v max_ttfb="${MAX_TTFB_SECONDS}" -v max_total="${MAX_TOTAL_SECONDS}" -v label="${label}" '
+              BEGIN {
+                if (ttfb > max_ttfb) {
+                  printf "::warning title=Slow TTFB::%s TTFB %.3fs exceeded %.3fs\n", label, ttfb, max_ttfb;
+                }
+                if (total > max_total) {
+                  printf "::warning title=Slow total time::%s total %.3fs exceeded %.3fs\n", label, total, max_total;
+                }
+              }
+            '
+          }
+
+          check_url "Home" "${SITE_URL}/"
+          check_url "Companies" "${SITE_URL}/companies"
+          check_url "Titles" "${SITE_URL}/titles"
+          check_url "Chat status" "${SITE_URL}/api/v1/chat/status"
