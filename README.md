@@ -7,6 +7,8 @@
 
 **H1B Friendly** is a high-performance, open-source platform designed to analyze millions of US Department of Labor (DOL) LCA filings. It provides instant insights into sponsorship trends, salary benchmarks, and company rankings, optimized to run on resource-constrained infrastructure.
 
+The homepage now includes an AI chat launcher that opens a modal assistant with a blurred backdrop, so users can ask sponsor and salary questions without leaving the rankings view.
+
 ---
 
 ## 🏗 System Architecture
@@ -81,6 +83,7 @@ docker compose up -d
 `docker compose` will run a one-shot `migrate` job before the backend starts, so required database indexes are created automatically on fresh environments.
 
 The chat endpoint is disabled unless `GEMINI_API_KEY` is present in the shell environment used for `docker compose up -d --build`.
+The recommended default model is `gemini-2.5-flash`.
 
 ### 3. Ingest Data
 

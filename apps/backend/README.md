@@ -52,12 +52,13 @@ The root `docker-compose.yml` also runs this migration step automatically before
 ## API Endpoints
 
 - `GET /health`: Healthcheck.
+- `GET /api/v1/chat/status`: Returns whether chat is enabled plus the configured Gemini model and rate limit.
 - `GET /api/v1/meta/years`: Retrieve available fiscal years.
 - `GET /api/v1/companies`: Paginated company list and search.
 - `GET /api/v1/companies/slug/:slug`: Fetch company details by SEO-friendly slug.
 - `GET /api/v1/rankings/summary`: aggregate statistics for rankings.
 - `GET /api/v1/debug/cache`: Monitor LRU cache usage and hits.
-- `POST /api/v1/chat`: Gemini-powered H1B chatbot endpoint with database-grounded RAG context.
+- `POST /api/v1/chat`: Gemini-powered H1B chatbot endpoint with database-grounded RAG context. Upstream quota/model errors are returned in the response message for easier debugging.
 
 ## Observability
 

@@ -31,5 +31,12 @@ npm run build
 
 - **Dynamic Year Filtering**: The UI automatically detects available data years per filter state.
 - **Global Loading State**: Visual feedback via a CSS spinner during data fetches.
+- **Homepage AI Chat Modal**: The home page includes a fixed AI launcher that opens a blurred modal chat experience without leaving the rankings page.
 - **Mobile Responsive**: Fully optimized for mobile and desktop viewing.
 - **Null Safety**: Comprehensive `COALESCE` and null-check logic to prevent UI crashes on sparse datasets.
+
+## AI Chat UX
+
+- The dedicated `/chat` route and the homepage modal reuse the same client chat component.
+- Chat availability is checked via `GET /api/v1/chat/status` before allowing user input.
+- The chat UI surfaces upstream Gemini model/quota errors directly so production failures are easier to diagnose.
