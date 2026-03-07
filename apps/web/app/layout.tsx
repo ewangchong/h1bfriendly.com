@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import React from 'react';
 import './globals.css';
 import Script from 'next/script';
+import Link from 'next/link';
 
 
 const navLink: React.CSSProperties = {
@@ -10,6 +11,13 @@ const navLink: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
 };
+
+const navItems = [
+  { href: '/', label: 'Rankings' },
+  { href: '/companies', label: 'Companies' },
+  { href: '/titles', label: 'Titles' },
+  { href: '/blog', label: 'Blog' },
+] as const;
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://h1bfriend.com'),
@@ -58,15 +66,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="header">
 
           <div className="header-inner">
-            <a href="/" style={{ fontWeight: 800, textDecoration: 'none', color: '#111', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link href="/" style={{ fontWeight: 800, textDecoration: 'none', color: '#111', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ width: 26, height: 26, borderRadius: 8, background: '#4F46E5', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12 }}>H1</span>
               <span>H1B Friendly</span>
-            </a>
+            </Link>
 
             <nav className="nav-desktop">
+              {navItems.map((item) => (
+                <Link key={item.href} href={item.href} style={navLink}>
+                  {item.label}
+                </Link>
+              ))}
             </nav>
 
             <div className="nav-mobile">
+              <Link href="/blog" style={navLink}>
+                Blog
+              </Link>
             </div>
           </div>
         </header>

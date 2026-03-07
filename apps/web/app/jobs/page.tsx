@@ -1,15 +1,10 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
-import { listJobs } from '@/lib/h1bApi';
 
 export const metadata: Metadata = {
   title: 'H1B Sponsorship Jobs',
   description: 'Browse jobs and signals related to H1B sponsorship.',
   alternates: { canonical: '/jobs' },
 };
-
-import JobsControls from './JobsControls';
-import PaginationControls from '../companies/PaginationControls';
 
 export default function JobsPage() {
   return (
@@ -43,8 +38,8 @@ export default function JobsPage() {
           <a href="/companies" style={btnSecondary}>
             Explore Companies
           </a>
-          <a href="/guides" style={btnSecondary}>
-            Read Guides
+          <a href="/blog" style={btnSecondary}>
+            Read Blog
           </a>
         </div>
       </div>
