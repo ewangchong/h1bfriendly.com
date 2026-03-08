@@ -21,8 +21,8 @@ export default function RankingsChart({ trend }: { trend: TrendData[] }) {
     if (!trend || trend.length === 0) return null;
 
     return (
-        <div style={{ width: '100%', height: 260, marginTop: 24, marginBottom: 12 }}>
-            <ResponsiveContainer width="100%" height="100%">
+        <div style={{ width: '100%', minWidth: 0, height: 260, marginTop: 24, marginBottom: 12 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={220}>
                 <BarChart
                     data={trend}
                     margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
