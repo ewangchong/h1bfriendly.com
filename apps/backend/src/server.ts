@@ -1176,6 +1176,126 @@ app.get('/api/v1/rankings', async (req, reply) => {
   return sendCachedOk(reply, setCached(cacheKey, res.rows));
 });
 
+app.post('/api/v1/plan/generate', async (req, reply) => {
+  const body = z.object({
+    target_role: z.string().trim().min(2).max(120),
+    target_state: z.string().trim().min(2).max(50).optional(),
+    target_city: z.string().trim().min(2).max(80).optional(),
+    years_experience: z.coerce.number().int().min(0).max(30).default(0),
+    year: z.coerce.number().int().min(2000).max(2100).optional(),
+  }).parse(req.body ?? {});
+
+  const latestYearRes = await pool.query('SELECT MAX(fiscal_year)::int AS y FROM lca_raw');
+  const selectedYear = body.year ?? latestYearRes.rows[0]?.y;
+  if (!selectedYear) {
+    return reply.code(500).send({ success: false, error: 'no_data', message: 'No H1B dataset year available.' });
+  }
+
+  const params: any[] = [selectedYear, `%${body.target_role}%`];
+  const where: string[] = [
+    'fiscal_year = $1',
+    'job_title ILIKE $2',
+    "employer_name_normalized IS NOT NULL AND employer_name_normalized <> ''",
+  ];
+
+  if (body.target_state) {
+    params.push(body.target_state.trim().toUpperCase());
+    where.push(`TRIM(UPPER(worksite_state)) = $${params.length}`);
+  }
+
+  if (body.target_city) {
+    params.push(body.target_city.trim().toUpperCase());
+    where.push(`TRIM(UPPER(worksite_city)) = $${params.length}`);
+  }
+
+  const whereSql = `WHERE ${where.join(' AND ')}`;
+
+  const topSponsorsRes = await pool.query(
+    `WITH agg AS (
+      SELECT
+        employer_name_normalized AS employer_norm,
+        COUNT(*)::int AS filings,
+        SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals,
+        ROUND(AVG(${SANITY_WAGE_SQL}), 0)::numeric AS avg_salary
+      FROM lca_raw
+      ${whereSql}
+      GROUP BY employer_name_normalized
+    )
+    SELECT
+      COALESCE(c.name, agg.employer_norm) AS company_name,
+      c.slug AS company_slug,
+      agg.filings,
+      agg.approvals,
+      COALESCE(agg.avg_salary, 0) AS avg_salary,
+      CASE WHEN agg.filings > 0 THEN ROUND((agg.approvals::numeric / agg.filings) * 100, 1) ELSE 0 END AS approval_rate
+    FROM agg
+    LEFT JOIN companies c ON c.employer_name_normalized = agg.employer_norm
+    ORDER BY agg.approvals DESC NULLS LAST, agg.filings DESC NULLS LAST
+    LIMIT 20`,
+    params
+  );
+
+  const suggestedTitlesRes = await pool.query(
+    `SELECT
+      REGEXP_REPLACE(TRIM(job_title), '\\s+', ' ', 'g') AS title,
+      COUNT(*)::int AS filings,
+      SUM(CASE WHEN case_status ILIKE 'CERTIFIED%' THEN 1 ELSE 0 END)::int AS approvals
+    FROM lca_raw
+    ${whereSql}
+    GROUP BY 1
+    ORDER BY approvals DESC NULLS LAST, filings DESC NULLS LAST
+    LIMIT 8`,
+    params
+  );
+
+  const sponsors = topSponsorsRes.rows.map((r: any) => ({
+    company_name: r.company_name,
+    company_slug: r.company_slug,
+    approvals: Number(r.approvals ?? 0),
+    filings: Number(r.filings ?? 0),
+    avg_salary: Number(r.avg_salary ?? 0),
+    approval_rate: Number(r.approval_rate ?? 0),
+    explainability: [
+      `${Number(r.approvals ?? 0).toLocaleString()} approvals in FY${selectedYear}`,
+      `${Number(r.approval_rate ?? 0)}% approval rate for similar role filings`,
+      body.target_state ? `Matches target state: ${body.target_state.toUpperCase()}` : 'Strong national sponsorship history',
+    ],
+  }));
+
+  const titles = suggestedTitlesRes.rows.map((r: any) => ({
+    title: r.title,
+    filings: Number(r.filings ?? 0),
+    approvals: Number(r.approvals ?? 0),
+  }));
+
+  const checklist = [
+    `Day 1: Apply to top 5 sponsors for ${body.target_role}`,
+    `Day 2: Tailor resume keywords to ${body.target_role} and target locations`,
+    'Day 3: Submit 5-8 additional applications with strongest approval history',
+    'Day 5: Follow up on submitted applications and recruiter outreach',
+    'Day 7: Review response quality and rebalance sponsor/title targets',
+  ];
+
+  return reply.send(ok({
+    year: selectedYear,
+    profile: {
+      target_role: body.target_role,
+      target_state: body.target_state ?? null,
+      target_city: body.target_city ?? null,
+      years_experience: body.years_experience,
+    },
+    recommendations: sponsors,
+    suggested_titles: titles,
+    weekly_checklist: checklist,
+    metric_definitions: {
+      filings: 'Total LCA filings in selected filters',
+      approvals: "Case status like 'CERTIFIED%'",
+      approval_rate: 'approvals / filings * 100',
+      avg_salary: 'Average annualized wage with sanity bounds',
+    },
+  }));
+});
+
 app.get('/api/v1/rankings/summary', async (req, reply) => {
   const cacheKey = `summary:${JSON.stringify(req.query)}`;
   const cached = getCached<any>(cacheKey);

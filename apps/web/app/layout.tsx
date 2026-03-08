@@ -13,6 +13,7 @@ const navLink: React.CSSProperties = {
 };
 
 const navItems = [
+  { href: '/plan', label: 'My Plan' },
   { href: '/', label: 'Rankings' },
   { href: '/companies', label: 'Companies' },
   { href: '/titles', label: 'Titles' },
