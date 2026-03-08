@@ -97,7 +97,7 @@ export default async function RankingsPage({
           WebkitTextFillColor: 'transparent',
           lineHeight: 1.2
         }}>
-          {sp.company ? sp.company : 'H1B Sponsor'} Leaderboard
+          {sp.company ? sp.company : 'Find Your Best H1B Sponsors'}
         </h1>
         <p style={{
           margin: '16px auto 0',
@@ -106,12 +106,46 @@ export default async function RankingsPage({
           lineHeight: 1.6,
           fontSize: 'clamp(16px, 2vw, 18px)'
         }}>
-          Find the top H1B sponsoring companies for your specific role and location.
-          Ranked by number of approved applications and average salary across historical USCIS public data.
+          Stop guessing where to apply. Get a personalized H1B action plan first, then use rankings to validate your targets.
+        </p>
+
+        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Link
+            href="/plan"
+            style={{
+              padding: '12px 22px',
+              borderRadius: 999,
+              background: '#4f46e5',
+              color: '#fff',
+              fontWeight: 800,
+              textDecoration: 'none',
+              boxShadow: '0 8px 24px rgba(79,70,229,0.25)'
+            }}
+          >
+            Get My H1B Plan
+          </Link>
+          <Link
+            href="#rankings"
+            style={{
+              padding: '12px 22px',
+              borderRadius: 999,
+              border: '1px solid #d4d4d8',
+              color: '#27272a',
+              fontWeight: 700,
+              textDecoration: 'none',
+              background: '#fff'
+            }}
+          >
+            Browse Rankings
+          </Link>
+        </div>
+
+        <p style={{ margin: '12px auto 0', color: '#71717a', fontSize: 13 }}>
+          Source: USCIS public disclosure data · Updated for FY {year}
         </p>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div id="rankings" style={{ marginTop: 12 }}>
         <RankingsControls defaultYear={year} years={displayYears} titles={titles} />
       </div>
 
