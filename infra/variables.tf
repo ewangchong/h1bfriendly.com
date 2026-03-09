@@ -19,7 +19,7 @@ variable "subnet_cidr" {
 variable "instance_type" {
   description = "EC2 instance type for running Docker Compose"
   type        = string
-  default     = "t3.small"
+  default     = "t3.large"
 }
 
 variable "key_name" {

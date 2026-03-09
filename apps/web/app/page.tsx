@@ -89,55 +89,80 @@ export default async function RankingsPage({
       <div style={{ textAlign: 'center', padding: '32px 16px 16px' }}>
         <h1 style={{
           margin: 0,
-          fontSize: 'clamp(32px, 5vw, 48px)',
-          letterSpacing: '-0.03em',
+          fontSize: 'clamp(32px, 5vw, 56px)',
+          letterSpacing: '-0.04em',
           fontWeight: 900,
           background: 'linear-gradient(to right, #111 0%, #4f46e5 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          lineHeight: 1.2
+          lineHeight: 1.1
         }}>
-          {sp.company ? sp.company : 'Find Your Best H1B Sponsors'}
+          {sp.company ? sp.company : 'The First Agent-Ready H1B Platform'}
         </h1>
         <p style={{
           margin: '16px auto 0',
           maxWidth: 760,
           color: '#52525b',
           lineHeight: 1.6,
-          fontSize: 'clamp(16px, 2vw, 18px)'
+          fontSize: 'clamp(16px, 2vw, 20px)',
+          fontWeight: 500
         }}>
-          Stop guessing where to apply. Get a personalized H1B action plan first, then use rankings to validate your targets.
+          Grounded data, AI-driven plans, built for the era of automation. Stop guessing—use verified H1B insights for your next career move.
         </p>
 
-        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
           <Link
             href="/plan"
             style={{
-              padding: '12px 22px',
+              padding: '14px 28px',
               borderRadius: 999,
               background: '#4f46e5',
               color: '#fff',
               fontWeight: 800,
               textDecoration: 'none',
-              boxShadow: '0 8px 24px rgba(79,70,229,0.25)'
+              boxShadow: '0 8px 24px rgba(79,70,229,0.3)',
+              fontSize: 16
             }}
           >
             Get My H1B Plan
           </Link>
           <Link
-            href="#rankings"
+            href="https://github.com/ewangchong/h1bfriendly.com/wiki/Data-and-Metric-Contract"
             style={{
-              padding: '12px 22px',
+              padding: '14px 28px',
               borderRadius: 999,
-              border: '1px solid #d4d4d8',
+              border: '2px solid #e4e4e7',
               color: '#27272a',
               fontWeight: 700,
               textDecoration: 'none',
-              background: '#fff'
+              background: '#fff',
+              fontSize: 16
             }}
           >
-            Browse Rankings
+            Agent & Dev Docs
           </Link>
+        </div>
+
+        <div style={{
+          marginTop: 32,
+          padding: '12px 20px',
+          background: '#f4f4f5',
+          borderRadius: 12,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 12,
+          border: '1px solid #e4e4e7'
+        }}>
+          <div style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#10b981',
+            boxShadow: '0 0 8px #10b981'
+          }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#3f3f46', fontFamily: 'monospace' }}>
+            API Status: Operational · Grounded in DOL FY2025
+          </span>
         </div>
 
         <p style={{ margin: '12px auto 0', color: '#71717a', fontSize: 13 }}>
