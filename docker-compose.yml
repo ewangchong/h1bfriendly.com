@@ -2,11 +2,6 @@ services:
   db:
     image: postgres:16-alpine
     container_name: h1b-db
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 2G
     environment:
       POSTGRES_DB: h1bfriend
       POSTGRES_USER: h1b
@@ -26,11 +21,6 @@ services:
     build:
       context: ./apps/backend
     container_name: h1b-backend
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     ports:
       - "8089:8089"
     environment:
@@ -50,10 +40,6 @@ services:
   migrate:
     build:
       context: ./apps/backend
-    deploy:
-      resources:
-        limits:
-          memory: 512M
     environment:
       - DATABASE_URL=postgres://h1b:${POSTGRES_PASSWORD:-change_me}@db:5432/h1bfriend
     command: ["sh", "-lc", "node dist/migrate.js"]
@@ -65,11 +51,6 @@ services:
     build:
       context: ./apps/web
     container_name: h1b-web
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     expose:
       - "3000"
     environment:
@@ -81,11 +62,7 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: h1b-caddy
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
