@@ -38,6 +38,17 @@ export default function PlanPage() {
 
   const canSubmit = useMemo(() => targetRole.trim().length >= 2, [targetRole]);
 
+  function createSessionKey() {
+    if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+      const bytes = new Uint8Array(8);
+      window.crypto.getRandomValues(bytes);
+      const randomPart = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+      return `s_${Date.now().toString(36)}_${randomPart}`;
+    }
+
+    return `s_${Date.now().toString(36)}_${Date.now().toString(16)}`;
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
@@ -46,7 +57,7 @@ export default function PlanPage() {
     const resolvedRef = (refFromUrl || refFromStorage).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64);
 
     const existingSession = window.localStorage.getItem('h1bfriend_ref_session') || '';
-    const generatedSession = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const generatedSession = createSessionKey();
     const resolvedSession = (existingSession || generatedSession).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
 
     setSessionKey(resolvedSession);
