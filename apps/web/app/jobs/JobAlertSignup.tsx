@@ -40,6 +40,29 @@ export default function JobAlertSignup() {
       }
 
       setMessage(payload?.message || 'Subscription saved.');
+
+      const referralCode = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfriend_ref_code') || '') : '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '')
+        .slice(0, 64);
+      const sessionKey = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfriend_ref_session') || '') : '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 80);
+
+      if (referralCode) {
+        fetch('/api/v1/referral/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_name: 'referral_signup',
+            referral_code: referralCode,
+            session_key: sessionKey || undefined,
+            source_page: '/jobs',
+            metadata: { frequency },
+          }),
+        }).catch(() => undefined);
+      }
+
       setEmail('');
       setKeywords('');
       setState('');
