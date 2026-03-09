@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { LRUCache } from 'lru-cache';
 import { slugify } from './slug.js';
 import { buildChatLogsWhereClause, extractUpstreamErrorMessage } from './chatUtils.js';
+import { METRIC_DEFINITIONS, METRIC_CONTRACT_DOC_PATH } from './metricsContract.js';
 
 
 const envSchema = z.object({
@@ -1288,10 +1289,9 @@ app.post('/api/v1/plan/generate', async (req, reply) => {
     suggested_titles: titles,
     weekly_checklist: checklist,
     metric_definitions: {
-      filings: 'Total LCA filings in selected filters',
-      approvals: "Case status like 'CERTIFIED%'",
+      ...METRIC_DEFINITIONS,
       approval_rate: 'approvals / filings * 100',
-      avg_salary: 'Average annualized wage with sanity bounds',
+      contract_doc: METRIC_CONTRACT_DOC_PATH,
     },
   }));
 });

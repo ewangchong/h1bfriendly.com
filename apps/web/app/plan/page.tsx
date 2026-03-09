@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { METRIC_CONTRACT_DOC_PATH, METRIC_CONTRACT_LABEL } from '@/lib/metricContract';
 
 type PlanResponse = {
   year: number;
@@ -157,6 +158,9 @@ export default function PlanPage() {
       <h1 style={{ margin: '8px 0 8px', fontSize: 'clamp(30px,4vw,42px)' }}>Personalized H1B Plan</h1>
       <p style={{ color: '#52525b', marginTop: 0 }}>
         Tell us your target role and location. We will return top sponsors, suggested titles, and a 7-day action checklist.
+      </p>
+      <p style={{ color: '#71717a', marginTop: -2, fontSize: 13 }}>
+        {METRIC_CONTRACT_LABEL}: <code>{METRIC_CONTRACT_DOC_PATH}</code>
       </p>
 
       <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', background: '#fff', border: '1px solid #e4e4e7', borderRadius: 14, padding: 14 }}>

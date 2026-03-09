@@ -1,0 +1,36 @@
+name: Contract CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - feat/**
+      - fix/**
+
+jobs:
+  backend-contract:
+    name: Backend contract tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build
+
+      - name: Run backend tests
+        run: npm test
