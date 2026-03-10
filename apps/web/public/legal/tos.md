@@ -2,8 +2,8 @@
 
 **生效日期：2026年3月9日 / Effective Date: March 9, 2026**
 
-欢迎访问 h1bfinder.com（以下简称“本网站”）。本网站由 [Your Entity/Owner] 运营，旨在作为“AI数据源”，为个人用户及 AI 智能体（AI Agents）提供基于美国劳工部（DOL）公开数据的结构化信息服务。
-Welcome to h1bfinder.com (hereinafter referred to as the "Site"). Operated by [Your Entity/Owner], this Site serves as an "AI Data Source," providing structured information services based on public data from the U.S. Department of Labor (DOL) for individual users and AI Agents.
+欢迎访问 h1bfinder.com（以下简称“本网站”）。本网站由 h1bfinder.com 团队运营，旨在作为“AI数据源”，为个人用户及 AI 智能体（AI Agents）提供基于美国劳工部（DOL）公开数据的结构化信息服务。
+Welcome to h1bfinder.com (hereinafter referred to as the "Site"). Operated by h1bfinder.com Team, this Site serves as an "AI Data Source," providing structured information services based on public data from the U.S. Department of Labor (DOL) for individual users and AI Agents.
 
 在使用本网站及相关的 `h1b-finder` 技能（Skill）前，请仔细阅读以下条款。
 Please read the following terms carefully before using this Site and the related `h1b-finder` skill.
@@ -20,12 +20,12 @@ h1bfinder.com is a **neutral, unofficial** data aggregation and analysis platfor
 
 *   关于 H1B 签证申请、移民政策或具体法律案件，请务必咨询受执业地的专业移民律师。
     Regarding H1B visa applications, immigration policies, or specific legal cases, please consult a professional immigration attorney licensed in the relevant jurisdiction.
-*   本网站显示的数据仅代表历史申请记录（LCA Filing），不代表当前的招聘状态或签证成功率。
+*   本网站显示的数据仅代表历史申请记录（LCA Filing），不代表当前的招聘状态 or 签证成功率。
     The data displayed on this Site represents historical filing records (LCA Filings) only and does not represent current hiring status or visa success rates.
 
 ## 3. 开源技能与用户责任 / Open Source Skills and User Responsibility
-我们提供的 `h1b-finder` 技能是基于 [MIT/Apache] 协议的开源项目。
-The `h1b-finder` skill we provide is an open-source project based on the [MIT/Apache] license.
+我们提供的 `h1b-finder` 技能是基于 MIT 协议的开源项目。
+The `h1b-finder` skill we provide is an open-source project based on the MIT license.
 
 *   **本地运行责任**：用户在 OpenClaw 等工作空间安装并运行该技能时，属于个人本地行为。
     **Local Execution Responsibility**: Installing and running this skill in workspaces such as OpenClaw is strictly a local action by the user.
