@@ -8,7 +8,7 @@ import HomeChatLauncher from './HomeChatLauncher';
 export const metadata: Metadata = {
   title: 'H1B Finder: The Power Source for Your AI Career Agent',
   description: 'Grounded in 4M+ records from DOL FY2025. Bring verified H1B insights directly into your OpenClaw workspace.',
-  keywords: ['h1b', 'h1b sponsor', 'h1b friendly', 'h1b database', 'h1b jobs', 'h1b visa', 'openclaw', 'ai agent'],
+  keywords: ['h1b', 'h1b sponsor', 'h1b database', 'h1b jobs', 'h1b visa', 'openclaw', 'ai agent'],
   alternates: { canonical: '/' },
 };
 
@@ -33,7 +33,6 @@ export default async function RankingsPage({
   const currentView = sp.view || 'rankings';
 
   // State for performance-optimized tab switching in 2GB RAM env
-  // We use URL-based switching to avoid heavy client-side state for larger data sets
   const isRankingsView = currentView === 'rankings';
   const isExplorerView = currentView === 'explorer';
 
@@ -80,7 +79,6 @@ export default async function RankingsPage({
   const yearsWithData = summary?.trend?.filter(t => t.filings > 0).map(t => String(t.year)) || [];
   const displayYears = (yearsWithData.length > 0) ? yearsWithData : years;
 
-  // Helper to build URL for tab switching
   const getTabUrl = (view: string) => {
     const p = new URLSearchParams();
     if (sp.year) p.set('year', sp.year);
@@ -107,7 +105,7 @@ export default async function RankingsPage({
           WebkitTextFillColor: 'transparent',
           lineHeight: 1.05
         }}>
-          H1B Finder：你的 AI 求职引擎数据底座
+          H1B Finder: The AI Data Source for Your Career
         </h1>
         <p style={{
           margin: '20px auto 0',
@@ -117,10 +115,10 @@ export default async function RankingsPage({
           fontSize: 'clamp(18px, 2.5vw, 22px)',
           fontWeight: 500
         }}>
-          基于 DOL FY2025 超过 400 万条真实记录。少做检索，多做决策——把可验证的 H1B 洞察直接接入你的 OpenClaw 工作流。
+          Grounded in 4M+ records from DOL FY2025. Stop searching, start automating—bring verified H1B insights directly into your OpenClaw workspace.
         </p>
 
-        {/* OpenClaw Integration Tile / 极速上手区 */}
+        {/* OpenClaw Integration Tile */}
         <div style={{
           marginTop: 40,
           background: '#09090b',
@@ -135,22 +133,22 @@ export default async function RankingsPage({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e' }} />
-            <span style={{ color: '#a1a1aa', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>OpenClaw 极速上手</span>
+            <span style={{ color: '#a1a1aa', fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Quick Integration / 极速上手</span>
           </div>
           <div style={{ background: '#18181b', padding: 16, borderRadius: 12, fontFamily: 'monospace', fontSize: 14, color: '#e4e4e7', border: '1px solid #3f3f46' }}>
-            <div style={{ color: '#a1a1aa', marginBottom: 4 }}># 1. 安装技能</div>
+            <div style={{ color: '#a1a1aa', marginBottom: 4 }}># 1. Install Skill / 安装技能</div>
             <div style={{ color: '#4f46e5', fontWeight: 700 }}>npx clawhub install h1b-finder</div>
-            <div style={{ color: '#a1a1aa', marginTop: 12, marginBottom: 4 }}># 2. 直接下达需求</div>
-            <div style={{ fontStyle: 'italic' }}>&quot;帮我找 NYC Product Manager 岗位里 H1B 薪资最高的公司&quot;</div>
+            <div style={{ color: '#a1a1aa', marginTop: 12, marginBottom: 4 }}># 2. Ask your Agent / 下达指令</div>
+            <div style={{ fontStyle: 'italic' }}>&quot;Which Austin companies pay Data Scientists over $150k?&quot;</div>
           </div>
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <Link href="/plan" style={{ color: '#fff', background: '#4f46e5', padding: '10px 20px', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>获取 AI 行动方案</Link>
-             <span style={{ color: '#71717a', fontSize: 12 }}>API 状态：Operational · 基于 DOL FY2025</span>
+             <Link href="/plan" style={{ color: '#fff', background: '#4f46e5', padding: '10px 20px', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}>Get Action Plan</Link>
+             <span style={{ color: '#71717a', fontSize: 12 }}>API: Operational · DOL FY2025</span>
           </div>
         </div>
       </div>
 
-      {/* Legal Footer / 合规底栏 */}
+      {/* Legal Footer */}
       <div style={{ 
         textAlign: 'center', 
         padding: '24px 16px', 
@@ -163,12 +161,12 @@ export default async function RankingsPage({
           H1B Finder © 2026 · AI Ready Data Source
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <Link href="/legal/tos.md" target="_blank" style={{ color: '#71717a', textDecoration: 'none' }}>服务条款</Link>
-          <Link href="/legal/privacy.md" target="_blank" style={{ color: '#71717a', textDecoration: 'none' }}>隐私政策</Link>
-          <a href="mailto:contact@h1bfinder.com" style={{ color: '#71717a', textDecoration: 'none' }}>联系法务</a>
+          <Link href="/legal/tos.md" target="_blank" style={{ color: '#71717a', textDecoration: 'none' }}>Terms</Link>
+          <Link href="/legal/privacy.md" target="_blank" style={{ color: '#71717a', textDecoration: 'none' }}>Privacy</Link>
+          <a href="mailto:contact@h1bfinder.com" style={{ color: '#71717a', textDecoration: 'none' }}>Contact</a>
         </div>
         <p style={{ marginTop: 12, fontSize: 11, maxWidth: 600, margin: '12px auto 0', lineHeight: 1.5 }}>
-          免责声明：本站数据源自 DOL 公开记录，不构成法律建议。AI 技能 `h1b-finder` 为开源工具，用户需对本地运行结果负责。
+          Disclaimer: Data sourced from public DOL records. Not legal advice. AI Skill `h1b-finder` is open source. Use at your own risk.
         </p>
       </div>
 
@@ -203,7 +201,6 @@ export default async function RankingsPage({
       </div>
 
       <div style={{ padding: '0 16px' }}>
-        {/* Conditional rendering for memory performance (2GB limit) */}
         {isRankingsView && (
           <div style={{ display: 'grid', gap: 24 }}>
             <div id="rankings">
