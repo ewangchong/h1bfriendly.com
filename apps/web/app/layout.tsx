@@ -13,12 +13,11 @@ const navLink: React.CSSProperties = {
 };
 
 const navItems = [
-  { href: '/plan', label: 'My Plan' },
-  { href: '/', label: 'Rankings' },
-  { href: '/companies', label: 'Companies' },
-  { href: '/titles', label: 'Titles' },
-  { href: '/chat', label: 'AI Chat' },
-  { href: '/blog', label: 'Blog' },
+  { href: '/companies', label: 'Top Sponsors', lowPriority: false },
+  { href: '/titles', label: 'Top Jobs', lowPriority: false },
+  { href: '/plan', label: 'My Plan', lowPriority: true },
+  { href: '/chat', label: 'AI Chat', lowPriority: false },
+  { href: '/blog', label: 'Blog', lowPriority: false },
 ] as const;
 
 export const metadata: Metadata = {
@@ -75,7 +74,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <nav className="nav-desktop">
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href} style={navLink}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    ...navLink,
+                    opacity: item.lowPriority ? 0.72 : 1,
+                    fontWeight: item.lowPriority ? 500 : 700,
+                  }}
+                >
                   {item.label}
                 </Link>
               ))}
