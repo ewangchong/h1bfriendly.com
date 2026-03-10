@@ -386,7 +386,7 @@ export default function PlanPage() {
           </div>
         ) : null}
 
-        <div style={{ marginTop: 80, pt: 32, borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+        <div style={{ marginTop: 80, paddingTop: 32, borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
           <p style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.6, maxWidth: 800, margin: '0 auto' }}>
             Roadmaps are algorithmically generated based on historical DOL data filters. Performance in a specific role or location is indicative of demand but does not guarantee employment or legal visa status.
           </p>

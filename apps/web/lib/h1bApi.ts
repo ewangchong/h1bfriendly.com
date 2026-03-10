@@ -84,6 +84,11 @@ export type TitleSummary = {
   last_year: number;
 };
 
+export type TitleRow = TitleSummary & {
+  id: string;
+  approvals?: number;
+};
+
 export async function getTitles(params?: { year?: string; limit?: number }) {
   const sp = new URLSearchParams();
   if (params?.year) sp.set('year', params.year);
@@ -91,6 +96,53 @@ export async function getTitles(params?: { year?: string; limit?: number }) {
 
   const data = await fetchJson<ApiEnvelope<TitleSummary[]>>(`/api/v1/titles?${sp.toString()}`);
   return data.data;
+}
+
+export async function listTitles(params?: {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  sortBy?: 'filings' | 'title';
+  sortDirection?: 'ASC' | 'DESC';
+  year?: string;
+}) {
+  const page = params?.page ?? 0;
+  const size = params?.size ?? 24;
+  const keyword = params?.keyword?.trim().toLowerCase();
+  const year = params?.year;
+  const sortBy = params?.sortBy ?? 'filings';
+  const sortDirection = params?.sortDirection ?? 'DESC';
+
+  let rows = (await getTitles({ year, limit: 500 })) as TitleRow[];
+  rows = rows.map((row) => ({ ...row, id: row.slug, approvals: row.approvals ?? 0 }));
+
+  if (keyword) {
+    rows = rows.filter((row) => row.title.toLowerCase().includes(keyword));
+  }
+
+  rows.sort((a, b) => {
+    if (sortBy === 'title') {
+      const cmp = a.title.localeCompare(b.title);
+      return sortDirection === 'ASC' ? cmp : -cmp;
+    }
+    const cmp = (a.filings ?? 0) - (b.filings ?? 0);
+    return sortDirection === 'ASC' ? cmp : -cmp;
+  });
+
+  const total_elements = rows.length;
+  const total_pages = Math.max(1, Math.ceil(total_elements / size));
+  const content = rows.slice(page * size, page * size + size);
+
+  return {
+    content,
+    page,
+    size,
+    total_elements,
+    total_pages,
+    first: page <= 0,
+    last: page >= total_pages - 1,
+    empty: total_elements === 0,
+  };
 }
 
 export async function listCompanies(params?: {
