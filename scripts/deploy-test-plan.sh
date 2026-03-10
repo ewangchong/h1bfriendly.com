@@ -27,8 +27,12 @@ check_no_api_500() {
   local body
   body="$(${BASE_CURL[@]} "${url}")"
   echo "[PAGE] ${label}: fetched ${#body} chars"
-  grep -q "API Connection Error. Verify H1B_API_BASE_URL." <<<"${body}" && fail "${label} shows API Connection Error"
-  grep -q "API 500 for http://backend:8089" <<<"${body}" && fail "${label} shows backend API 500"
+  if grep -q "API Connection Error. Verify H1B_API_BASE_URL." <<<"${body}"; then
+    fail "${label} shows API Connection Error"
+  fi
+  if grep -q "API 500 for http://backend:8089" <<<"${body}"; then
+    fail "${label} shows backend API 500"
+  fi
 }
 
 check_api_json_success() {
