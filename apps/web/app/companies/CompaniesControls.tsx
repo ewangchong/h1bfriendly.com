@@ -55,11 +55,11 @@ export default function CompaniesControls({
         alignItems: 'center',
         flexWrap: 'wrap',
         margin: '18px 0 10px',
-        padding: 12,
-        borderRadius: 14,
-        border: '1px solid #eee',
-        background: '#fff',
-        boxShadow: '0 1px 0 rgba(0,0,0,0.02)',
+        padding: '20px 24px',
+        borderRadius: 16,
+        border: '1px solid #e2e8f0',
+        background: '#f8fafc',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
         maxWidth: 920,
         width: '100%',
         justifyContent: 'center',
@@ -76,11 +76,11 @@ export default function CompaniesControls({
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
         placeholder="Search company name…"
-        style={{ padding: '10px 12px', border: '1px solid #ddd', borderRadius: 10, minWidth: 240 }}
+        style={{ padding: '10px 14px', border: '1px solid #ccc', borderRadius: 10, minWidth: 240, background: '#fff' }}
       />
       <button
         onClick={() => setParams({ keyword: keyword.trim() || null })}
-        style={{ padding: '10px 12px', border: '1px solid #111', background: '#111', color: '#fff', borderRadius: 10 }}
+        style={{ padding: '10px 14px', border: 'none', background: 'linear-gradient(to right, #4f46e5, #3b82f6)', color: '#fff', borderRadius: 10, fontWeight: 700 }}
       >
         Apply
       </button>
@@ -89,7 +89,7 @@ export default function CompaniesControls({
           setKeyword('');
           setParams({ keyword: null });
         }}
-        style={{ padding: '10px 12px', border: '1px solid #ddd', background: '#fff', borderRadius: 10 }}
+        style={{ padding: '10px 12px', border: '1px solid #d1d5db', background: '#fff', borderRadius: 10 }}
       >
         Clear
       </button>
@@ -111,19 +111,20 @@ export default function CompaniesControls({
 
       <label style={{ marginLeft: 8, color: '#555', fontSize: 14 }}>Year</label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {years.map((y) => (
+        {[...years].sort((a,b)=>Number(b)-Number(a)).map((y) => (
           <button
             key={y}
             onClick={() => setParams({ year: y })}
             style={{
-              padding: '9px 10px',
-              borderRadius: 999,
-              border: '1px solid #eee',
+              padding: '8px 16px',
+              borderRadius: 20,
+              border: y === currentYear ? '1px solid #111' : '1px solid #ddd',
               background: y === currentYear ? '#111' : '#fff',
-              color: y === currentYear ? '#fff' : '#111',
-              fontWeight: 800,
-              fontSize: 13,
+              color: y === currentYear ? '#fff' : '#444',
+              fontWeight: y === currentYear ? 700 : 500,
+              fontSize: 14,
               cursor: 'pointer',
+              transition: 'all 0.15s ease',
             }}
           >
             {y}

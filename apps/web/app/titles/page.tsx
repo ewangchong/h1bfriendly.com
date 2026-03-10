@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import TitlesControls from './TitlesControls';
 
 export const metadata: Metadata = {
   title: 'Roles (Titles)',
@@ -72,42 +73,7 @@ export default async function TitlesIndex({
         </p>
       </div>
 
-      <div
-        style={{
-          margin: '18px auto 10px',
-          padding: 12,
-          borderRadius: 14,
-          border: '1px solid #eee',
-          background: '#fff',
-          boxShadow: '0 1px 0 rgba(0,0,0,0.02)',
-          maxWidth: 920,
-          display: 'flex',
-          gap: 12,
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span style={{ color: '#666', fontSize: 14 }}>Year</span>
-        {years.map((y) => (
-          <Link
-            key={y}
-            href={`/titles?year=${y}`}
-            style={{
-              padding: '8px 10px',
-              borderRadius: 999,
-              border: '1px solid #eee',
-              background: y === year ? '#111' : '#fff',
-              color: y === year ? '#fff' : '#111',
-              textDecoration: 'none',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {y}
-          </Link>
-        ))}
-      </div>
+      <TitlesControls years={years} defaultYear={year} />
 
       <div className="grid2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, marginTop: 12 }}>
         {rows.map((r) => (
