@@ -41,11 +41,11 @@ export default function JobAlertSignup() {
 
       setMessage(payload?.message || 'Subscription saved.');
 
-      const referralCode = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfriend_ref_code') || '') : '')
+      const referralCode = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfinder_ref_code') || '') : '')
         .toLowerCase()
         .replace(/[^a-z0-9_-]/g, '')
         .slice(0, 64);
-      const sessionKey = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfriend_ref_session') || '') : '')
+      const sessionKey = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfinder_ref_session') || '') : '')
         .replace(/[^a-zA-Z0-9_-]/g, '')
         .slice(0, 80);
 

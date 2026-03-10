@@ -3,9 +3,9 @@
 
 export DATA_DIR="/home/ec2-user/h1b-data"
 export DONE_DIR="$DATA_DIR/done"
-export DATABASE_URL="postgresql://h1b:generated_random_pass_123@localhost:5432/h1bfriend"
+export DATABASE_URL="postgresql://h1b:generated_random_pass_123@localhost:5432/h1bfinder"
 
-cd /home/ec2-user/h1bfriend/apps/etl || exit
+cd /home/ec2-user/h1bfinder/apps/etl || exit
 source venv/bin/activate
 
 mkdir -p "$DONE_DIR"

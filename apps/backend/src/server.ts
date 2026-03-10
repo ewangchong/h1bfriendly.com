@@ -11,7 +11,7 @@ import { buildChatLogsWhereClause, extractUpstreamErrorMessage } from './chatUti
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(8089),
-  DATABASE_URL: z.string().default('postgres://h1b:change_me@127.0.0.1:5432/h1bfriend'),
+  DATABASE_URL: z.string().default('postgres://h1b:change_me@127.0.0.1:5432/h1bfinder'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().min(1).max(120).default(20),

@@ -53,21 +53,21 @@ export default function PlanPage() {
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
     const refFromUrl = sp.get('ref')?.trim() || '';
-    const refFromStorage = window.localStorage.getItem('h1bfriend_ref_code') || '';
+    const refFromStorage = window.localStorage.getItem('h1bfinder_ref_code') || '';
     const resolvedRef = (refFromUrl || refFromStorage).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64);
 
-    const existingSession = window.localStorage.getItem('h1bfriend_ref_session') || '';
+    const existingSession = window.localStorage.getItem('h1bfinder_ref_session') || '';
     const generatedSession = createSessionKey();
     const resolvedSession = (existingSession || generatedSession).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
 
     setSessionKey(resolvedSession);
-    window.localStorage.setItem('h1bfriend_ref_session', resolvedSession);
+    window.localStorage.setItem('h1bfinder_ref_session', resolvedSession);
 
     if (resolvedRef) {
       setRefCode(resolvedRef);
-      window.localStorage.setItem('h1bfriend_ref_code', resolvedRef);
+      window.localStorage.setItem('h1bfinder_ref_code', resolvedRef);
 
-      const visitTrackKey = `h1bfriend_ref_visit_${resolvedSession}_${resolvedRef}`;
+      const visitTrackKey = `h1bfinder_ref_visit_${resolvedSession}_${resolvedRef}`;
       if (!window.localStorage.getItem(visitTrackKey)) {
         fetch('/api/v1/referral/track', {
           method: 'POST',

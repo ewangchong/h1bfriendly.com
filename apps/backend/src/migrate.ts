@@ -7,7 +7,7 @@ import { z } from 'zod';
 const { Pool } = pg;
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().default('postgres://h1b:change_me@127.0.0.1:5432/h1bfriend'),
+  DATABASE_URL: z.string().default('postgres://h1b:change_me@127.0.0.1:5432/h1bfinder'),
 });
 
 const env = envSchema.parse({
