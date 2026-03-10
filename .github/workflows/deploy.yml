@@ -25,6 +25,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Note: Host directory still named h1bfriend for now to avoid breaking Runner path
           cd ~/h1bfriend
 
           git fetch origin main
@@ -106,8 +107,8 @@ jobs:
 
           curl --fail --silent --show-error http://127.0.0.1:8089/health >/dev/null
           curl --fail --silent --show-error --insecure \
-            --resolve h1bfriend.com:443:127.0.0.1 \
-            https://h1bfriend.com/api/v1/meta/years >/dev/null
+            --resolve h1bfinder.com:443:127.0.0.1 \
+            https://h1bfinder.com/api/v1/meta/years >/dev/null
 
       - name: Warm caches (optional)
         id: warm_cache
@@ -131,8 +132,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          SITE_URL="https://h1bfriend.com"
-          HOST_NAME="h1bfriend.com"
+          SITE_URL="https://h1bfinder.com"
+          HOST_NAME="h1bfinder.com"
           MAX_TTFB_SECONDS="${MAX_TTFB_SECONDS:-2.5}"
           MAX_TOTAL_SECONDS="${MAX_TOTAL_SECONDS:-8}"
 
