@@ -65,18 +65,18 @@ Typical query dimensions include: `employer`, `job_title`, `city/state`, `fiscal
 常用查询维度包括：`employer`、`job_title`、`city/state`、`fiscal_year`、`case_status`。
 
 ## Setup / 使用方式
-Install (registry):  
-安装（仓库方式）：
-
-```bash
-openclaw skill install h1b-finder
-```
-
-If your runtime uses ClawHub CLI directly:  
-如果你的环境直接使用 ClawHub CLI：
+Install via ClawHub (Recommended):  
+通过 ClawHub 安装（推荐）：
 
 ```bash
 npx clawhub install h1b-finder
+```
+
+Legacy installer (if supported by your environment):  
+旧版安装方式（如果你的环境仍支持）：
+
+```bash
+openclaw skill install h1b-finder
 ```
 
 ## Security & Privacy / 安全与隐私

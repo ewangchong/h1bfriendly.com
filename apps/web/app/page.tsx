@@ -139,7 +139,7 @@ export default async function RankingsPage({
           </div>
           <div style={{ background: '#18181b', padding: 16, borderRadius: 12, fontFamily: 'monospace', fontSize: 14, color: '#e4e4e7', border: '1px solid #3f3f46' }}>
             <div style={{ color: '#a1a1aa', marginBottom: 4 }}># 1. 安装技能</div>
-            <div style={{ color: '#4f46e5', fontWeight: 700 }}>openclaw skill install h1b-finder</div>
+            <div style={{ color: '#4f46e5', fontWeight: 700 }}>npx clawhub install h1b-finder</div>
             <div style={{ color: '#a1a1aa', marginTop: 12, marginBottom: 4 }}># 2. 直接下达需求</div>
             <div style={{ fontStyle: 'italic' }}>&quot;帮我找 NYC Product Manager 岗位里 H1B 薪资最高的公司&quot;</div>
           </div>
