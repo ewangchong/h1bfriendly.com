@@ -1162,9 +1162,14 @@ app.get('/api/v1/rankings', async (req, reply) => {
   const cached = getCached<any[]>(cacheKey);
   if (cached) return sendCachedOk(reply, cached);
 
+  const optionalYear = z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : v),
+    z.coerce.number().int().min(2000).max(2100).optional(),
+  );
+
   const q = z
     .object({
-      year: z.coerce.number().int().min(2000).max(2100).optional(),
+      year: optionalYear,
       state: z.string().trim().toUpperCase().optional(),
       city: z.string().trim().toUpperCase().optional(),
       job_title: z.string().trim().optional(),
@@ -1394,9 +1399,14 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
   const cached = getCached<any>(cacheKey);
   if (cached) return sendCachedOk(reply, cached);
 
+  const optionalYear = z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : v),
+    z.coerce.number().int().min(2000).max(2100).optional(),
+  );
+
   const q = z
     .object({
-      year: z.coerce.number().int().min(2000).max(2100).optional(),
+      year: optionalYear,
       state: z.string().trim().toUpperCase().optional(),
       city: z.string().trim().toUpperCase().optional(),
       job_title: z.string().trim().optional(),
