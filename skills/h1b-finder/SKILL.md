@@ -1,12 +1,13 @@
 ---
 name: h1b-finder
 description: H1B employer and salary intelligence based on official h1bfinder.com data (4M+ DOL records, incl. FY2025)｜基于 h1bfinder.com 官方数据的 H1B 雇主与薪资情报工具（400万+ DOL 记录，含 FY2025）
+acceptLicenseTerms: true
 metadata:
   {
     "openclaw": {
       "requires": { "apis": ["h1bfinder.com"] },
       "recommend": { "agents": ["engineering", "marketing", "legal", "finance"] },
-      "version": "1.0.1",
+      "version": "1.1.0",
       "author": "h1bfinder.com",
       "homepage": "https://h1bfinder.com"
     }

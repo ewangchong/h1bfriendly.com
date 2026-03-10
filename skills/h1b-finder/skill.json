@@ -1,7 +1,7 @@
 {
   "name": "h1b-finder",
   "slug": "h1b-finder",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "The official Agent-Ready H1B search tool for h1bfinder.com. Query 4M+ LCA records for FY2025 directly from your AI agent.",
   "author": "h1bfinder.com",
   "license": "MIT",
