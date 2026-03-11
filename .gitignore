@@ -41,3 +41,11 @@ override.tf.json
 .terraformrc
 terraform.rc
 *.pem
+
+# internal / draft docs (do not publish)
+pre-launch-kanban.md
+docs/legal_drafts_*.md
+docs/internal/
+reports/
+*.draft.md
+*_draft.md
