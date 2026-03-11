@@ -20,7 +20,6 @@ H1B Finder is built by a cross-functional AI-native team with clear ownership ac
 - **CEO** — sets direction, priorities, and final decisions
 - **Chief of Staff** — single coordination entry point across teams
 - **Management / Program Management** — planning, dependencies, owners, deadlines, and execution rhythm
-- **Chief People Officer (CPO)** — team health, psychological safety, and communication quality
 - **Engineering** — product development, technical implementation, and feature delivery
 - **DevOps / Infrastructure** — deployment, reliability, performance, and release safety
 - **Marketing / Growth** — positioning, launch narrative, content, and community communication
@@ -34,7 +33,6 @@ graph TD
     CEO[CEO]
     COS[Chief of Staff\nOverall coordination]
     MGMT[Management / Program Management\nExecution tracking & coordination]
-    CPO[Chief People Officer\nTeam health & communication quality]
     ENG[Engineering\nProduct engineering]
     DEVOPS[DevOps / Infrastructure\nInfra, reliability, CI/CD]
     MKT[Marketing / Growth\nBrand, content, growth]
@@ -43,7 +41,6 @@ graph TD
 
     CEO --> COS
     COS --> MGMT
-    COS --> CPO
     COS --> ENG
     COS --> DEVOPS
     COS --> MKT
@@ -55,8 +52,7 @@ graph TD
 
 1. **Chief of Staff is the single coordination entry point** for cross-team execution.
 2. **Management acts as PMO, not as a second command center** — it drives owners, deadlines, blockers, and follow-through.
-3. **CPO is not in the business command chain** — the role focuses on resilience, communication quality, and team health.
-4. **Each functional team is accountable for its own domain judgment** — engineering, operations, marketing, finance, and legal keep clear boundaries.
+3. **Each functional team is accountable for its own domain judgment** — engineering, operations, marketing, finance, and legal keep clear boundaries.
 
 This structure helps us move fast without losing accountability, reviewability, or execution discipline.
 
