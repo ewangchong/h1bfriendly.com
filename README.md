@@ -11,53 +11,56 @@ The homepage now includes an AI chat launcher that opens a modal assistant with 
 
 ---
 
-## 👥 Team
+## 👥 Team Structure
 
-H1B Finder is maintained by a small specialized AI team with clear operating boundaries. Instead of letting multiple agents talk in an unstructured loop, we separate **coordination, project management, organizational support, and domain execution**.
+H1B Finder is built by a cross-functional AI-native team with clear ownership across coordination, execution management, organizational support, engineering, infrastructure, growth, finance, and compliance.
 
 ### Public-facing roles
 
 - **CEO** — sets direction, priorities, and final decisions
 - **Chief of Staff** — single coordination entry point across teams
-- **Management (PMO)** — planning, dependencies, owners, deadlines, and execution rhythm
-- **Chief People Officer (CPO)** — team health, psychological safety, and pressure management
-- **Engineering** — product development, technical implementation, feature delivery
-- **DevOps / SRE** — deployment, reliability, performance, release safety
-- **Marketing** — positioning, launch narrative, community communication
+- **Management / Program Management** — planning, dependencies, owners, deadlines, and execution rhythm
+- **Chief People Officer (CPO)** — team health, psychological safety, and communication quality
+- **Engineering** — product development, technical implementation, and feature delivery
+- **DevOps / Infrastructure** — deployment, reliability, performance, and release safety
+- **Marketing / Growth** — positioning, launch narrative, content, and community communication
 - **Finance** — budget, cost controls, and capacity trade-offs
-- **Legal** — compliance, licensing, privacy, and data-boundary review
+- **Legal / Compliance** — compliance, licensing, privacy, and external legal-risk review
 
 ### Team structure
 
 ```mermaid
 graph TD
-    A[CEO] --> B[Chief of Staff
-Coordination]
-    A --> E[Engineering
-Product & Delivery]
-    A --> F[DevOps / SRE
-Reliability & Release]
-    A --> G[Marketing
-Narrative & Community]
-    A --> H[Finance
-Budget & Cost Review]
-    A --> I[Legal
-Compliance & Risk]
+    CEO[CEO]
+    COS[Chief of Staff\nOverall coordination]
+    MGMT[Management / Program Management\nExecution tracking & coordination]
+    CPO[Chief People Officer\nTeam health & communication quality]
+    ENG[Engineering\nProduct engineering]
+    DEVOPS[DevOps / Infrastructure\nInfra, reliability, CI/CD]
+    MKT[Marketing / Growth\nBrand, content, growth]
+    FIN[Finance\nBudget, ROI, resource planning]
+    LEGAL[Legal / Compliance\nCompliance, privacy, legal risk]
 
-    B --> C[Management / PMO
-Planning / Dependencies / Execution Rhythm]
-    B --> D[CPO
-Psychological Safety / Team Health]
+    CEO --> COS
+    COS --> MGMT
+    COS --> CPO
+    COS --> ENG
+    COS --> DEVOPS
+    COS --> MKT
+    COS --> FIN
+    COS --> LEGAL
 ```
 
 ### Operating principles
 
 1. **Chief of Staff is the single coordination entry point** for cross-team execution.
 2. **Management acts as PMO, not as a second command center** — it drives owners, deadlines, blockers, and follow-through.
-3. **CPO is not in the business command chain** — the role is focused on resilience, communication quality, and team health.
-4. **Each functional team is accountable for its own domain judgment** — engineering, ops, marketing, finance, and legal keep clear boundaries.
+3. **CPO is not in the business command chain** — the role focuses on resilience, communication quality, and team health.
+4. **Each functional team is accountable for its own domain judgment** — engineering, operations, marketing, finance, and legal keep clear boundaries.
 
 This structure helps us move fast without losing accountability, reviewability, or execution discipline.
+
+---
 
 ## 🏗 System Architecture
 
