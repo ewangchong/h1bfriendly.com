@@ -84,7 +84,7 @@ test('rankings/company/chat aggregations stay consistent for the same filtered r
 });
 
 test('metric contract doc path and definitions are present for backend/frontend references', () => {
-  assert.equal(METRIC_CONTRACT_DOC_PATH, 'docs/metric-contract.md');
+  assert.equal(METRIC_CONTRACT_DOC_PATH, 'local-notes/engineering/metrics-contract.md');
   assert.ok(METRIC_DEFINITIONS.filings.includes('Count every LCA row'));
   assert.ok(METRIC_DEFINITIONS.approvals.includes('CERTIFIED%'));
   assert.ok(METRIC_DEFINITIONS.avg_salary.includes('10,000 to 5,000,000'));
