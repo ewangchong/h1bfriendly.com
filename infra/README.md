@@ -24,14 +24,14 @@ This Terraform configuration provisions a low-cost, production-ready environment
    ```bash
    # Sync only the necessary application files
    rsync -avz --exclude='node_modules' --exclude='.next' --exclude='venv' \
-     -e "ssh -i your-key.pem" . ec2-user@your-ip:~/h1bfriend
+     -e "ssh -i your-key.pem" . ec2-user@your-ip:~/h1bfinder
    ```
 
 3. **Orchestrate**:
    SSH into the server and launch the containers:
    ```bash
    ssh -i your-key.pem ec2-user@your-ip
-   cd h1bfriend
+   cd h1bfinder
    export GEMINI_API_KEY=your_actual_key_here
    docker compose up -d --build
    ```

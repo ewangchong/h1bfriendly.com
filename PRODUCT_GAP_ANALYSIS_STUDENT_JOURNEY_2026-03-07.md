@@ -100,5 +100,5 @@ Target user expectation:
 
 ## 6) Working hypothesis
 
-If h1bfriend shifts from “data exploration” to “personalized action planning,”
+If h1bfinder shifts from “data exploration” to “personalized action planning,”
 conversion and retention should improve because users can immediately act on recommendations.
