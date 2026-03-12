@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import RankingsControls from './RankingsControls';
+import HomeHeroActions from './HomeHeroActions';
+import HomeLeadCapture from './HomeLeadCapture';
 import { getAvailableYears, listCompanies, getTitles } from '@/lib/h1bApi';
 
 export const metadata: Metadata = {
@@ -60,10 +62,7 @@ export default async function HomePage({
         </div>
 
         {/* Hero CTAs */}
-        <div className="landing-hero-actions">
-          <a href="#" className="landing-hero-button landing-hero-button-primary">Install Skill</a>
-          <Link href="/companies" className="landing-hero-button landing-hero-button-secondary">Explore Sponsors</Link>
-        </div>
+        <HomeHeroActions />
       </section>
 
       {/* 2. Proof Strip */}
@@ -83,6 +82,8 @@ export default async function HomePage({
           <div className="landing-proof-label">Verified Sponsor Signal</div>
         </div>
       </section>
+
+      <HomeLeadCapture />
 
       {/* 3. Lightweight Search Demo */}
       <section className="landing-search">

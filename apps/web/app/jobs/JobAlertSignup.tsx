@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 export default function JobAlertSignup() {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ export default function JobAlertSignup() {
     setLoading(true);
     setMessage(null);
     setError(null);
+    trackEvent('job_alert_started', { source_page: '/jobs', frequency });
 
     try {
       const res = await fetch('/api/v1/job-alert-subscriptions', {
@@ -40,6 +42,11 @@ export default function JobAlertSignup() {
       }
 
       setMessage(payload?.message || 'Subscription saved.');
+      trackEvent('job_alert_submitted', {
+        source_page: '/jobs',
+        frequency,
+        outcome: payload?.data?.existing ? 'reactivated' : 'created',
+      });
 
       const referralCode = (typeof window !== 'undefined' ? (window.localStorage.getItem('h1bfinder_ref_code') || '') : '')
         .toLowerCase()
@@ -70,6 +77,7 @@ export default function JobAlertSignup() {
       setFrequency('weekly');
     } catch (err: any) {
       setError(err?.message || 'Something went wrong.');
+      trackEvent('job_alert_failed', { source_page: '/jobs' });
     } finally {
       setLoading(false);
     }

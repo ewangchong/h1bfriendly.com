@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { trackEvent } from '@/lib/analytics';
 
 type PlanResponse = {
   year: number;
@@ -99,9 +100,11 @@ export default function PlanPage() {
       setLoading(true);
       setError('');
       setPlan(null);
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'plan_started');
-      }
+      trackEvent('plan_started', {
+        source_page: '/plan',
+        target_state: targetState.trim() || 'any',
+        has_city: Boolean(targetCity.trim()),
+      });
 
       const res = await fetch('/api/v1/plan/generate', {
         method: 'POST',
@@ -122,11 +125,14 @@ export default function PlanPage() {
       }
 
       setPlan(json.data);
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'plan_submitted');
-      }
+      trackEvent('plan_submitted', {
+        source_page: '/plan',
+        target_state: targetState.trim() || 'any',
+        recommendations: json?.data?.recommendations?.length ?? 0,
+      });
     } catch (err: any) {
       setError(err?.message || 'Failed to generate plan.');
+      trackEvent('plan_failed', { source_page: '/plan' });
     } finally {
       setLoading(false);
     }
@@ -159,9 +165,7 @@ export default function PlanPage() {
     try {
       await navigator.clipboard.writeText(text);
       setShareNotice('Share text copied.');
-      if ((window as any).gtag) {
-        (window as any).gtag('event', 'plan_shared', { method: 'copy_text' });
-      }
+      trackEvent('plan_shared', { method: 'copy_text' });
     } catch {
       setShareNotice('Copy failed. Please copy manually.');
     }
@@ -182,9 +186,7 @@ export default function PlanPage() {
         await navigator.clipboard.writeText(shareUrl);
       }
       setShareNotice('Share link ready.');
-      if ((window as any).gtag) {
-        (window as any).gtag('event', 'plan_shared', { method: typeof navigator.share === 'function' ? 'native_share' : 'copy_link' });
-      }
+      trackEvent('plan_shared', { method: typeof navigator.share === 'function' ? 'native_share' : 'copy_link' });
     } catch {
       setShareNotice('Share canceled or unavailable.');
     }
