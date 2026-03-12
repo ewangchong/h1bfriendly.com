@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: h1b-db
+    container_name: h1bfinder-db
     environment:
       POSTGRES_DB: h1bfriend
       POSTGRES_USER: h1b
@@ -18,9 +18,10 @@ services:
       retries: 5
 
   backend:
+    image: h1bfinder-backend
     build:
       context: ./apps/backend
-    container_name: h1b-backend
+    container_name: h1bfinder-backend
     ports:
       - "8089:8089"
     environment:
@@ -38,6 +39,8 @@ services:
         condition: service_healthy
 
   migrate:
+    image: h1bfinder-migrate
+    container_name: h1bfinder-migrate
     build:
       context: ./apps/backend
     environment:
@@ -48,9 +51,10 @@ services:
         condition: service_healthy
 
   web:
+    image: h1bfinder-web
     build:
       context: ./apps/web
-    container_name: h1b-web
+    container_name: h1bfinder-web
     expose:
       - "3000"
     environment:
@@ -61,7 +65,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    container_name: h1b-caddy
+    container_name: h1bfinder-caddy
     restart: unless-stopped
     ports:
       - "80:80"
