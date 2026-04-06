@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { permanentRedirect, notFound } from 'next/navigation';
 import { getAvailableYears, getCompanyBySlug, getCompanyInsightsBySlug } from '@/lib/h1bApi';
 import { STATES } from '@/lib/states';
 
@@ -45,7 +45,7 @@ export default async function CompanyDetail({
 
   if (!slug.endsWith('-h1b-sponsorship')) {
     const yearParam = sp.year ? `?year=${sp.year}` : '';
-    redirect(`/companies/${slug}-h1b-sponsorship${yearParam}`);
+    permanentRedirect(`/companies/${slug}-h1b-sponsorship${yearParam}`);
   }
 
   const realSlug = slug.replace(/-h1b-sponsorship$/, '');
@@ -55,6 +55,9 @@ export default async function CompanyDetail({
   try {
     c = await getCompanyBySlug(realSlug, requestedYear);
   } catch (e: any) {
+    if (e?.message === 'not_found' || String(e?.message).includes('404')) {
+      notFound();
+    }
     return (
       <div style={{ padding: '64px 20px', textAlign: 'center' }}>
         <h1 style={{ color: '#0f172a', fontSize: 24, fontWeight: 800 }}>Company</h1>

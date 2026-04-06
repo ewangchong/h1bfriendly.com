@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getRankings, getRankingsSummary, getAvailableYears } from '@/lib/h1bApi';
 import { STATES, getStateBySlug } from '@/lib/states';
 
@@ -34,7 +34,7 @@ export default async function StateLandingPage({
   if (!slug.endsWith('-h1b-sponsors')) {
     const yearParam = sp.year ? `?year=${sp.year}` : '';
     const nameSlug = slug.replace(/-h1b-sponsors$/, '');
-    redirect(`/states/${nameSlug}-h1b-sponsors${yearParam}`);
+    permanentRedirect(`/states/${nameSlug}-h1b-sponsors${yearParam}`);
   }
 
   const state = getStateBySlug(slug);

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { permanentRedirect, notFound } from 'next/navigation';
 import { STATES } from '@/lib/states';
 
 type Summary = {
@@ -71,7 +71,7 @@ export default async function TitlePage({
 
   if (!slug.endsWith('-h1b-sponsors')) {
     const yearParam = sp.year ? `?year=${sp.year}` : '';
-    redirect(`/titles/${slug}-h1b-sponsors${yearParam}`);
+    permanentRedirect(`/titles/${slug}-h1b-sponsors${yearParam}`);
   }
 
   const realSlug = slug.replace(/-h1b-sponsors$/, '');
@@ -89,6 +89,9 @@ export default async function TitlePage({
   try {
     s = await getSummary(realSlug, year);
   } catch (e: any) {
+    if (e?.message === 'not_found' || String(e?.message).includes('404')) {
+      notFound();
+    }
     return (
       <div style={{ padding: '64px 20px', textAlign: 'center' }}>
         <h1 style={{ color: '#0f172a', fontSize: 24, fontWeight: 800 }}>Job Summary</h1>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getJob } from '@/lib/h1bApi';
+import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -16,6 +17,9 @@ export default async function JobDetail({ params }: { params: Promise<{ id: stri
   try {
     j = await getJob(id);
   } catch (e: any) {
+    if (e?.message === 'not_found' || String(e?.message).includes('404')) {
+      notFound();
+    }
     return (
       <div>
         <h1 style={{ margin: 0 }}>Job</h1>
