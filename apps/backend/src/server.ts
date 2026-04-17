@@ -495,6 +495,102 @@ async function logGrowthEvent(event: {
   }
 }
 
+// ----- Invite Rewards System -----
+const REWARD_TIERS = [
+  { threshold: 1, reward: 'chat_credits_20', label: '+20 Chat Credits' },
+  { threshold: 3, reward: 'company_compare', label: 'Unlock Company Compare' },
+  { threshold: 5, reward: 'resume_keyword_hints', label: 'Unlock Resume Keyword Hints' },
+] as const;
+
+async function checkAndGrantRewards(userId: string, referralCode: string): Promise<{ inviteCount: number; newRewards: string[]; allRewards: string[] }> {
+  // Count unique signups attributed to this referral code
+  const countRes = await pool.query(
+    `SELECT COUNT(DISTINCT session_key)::int AS cnt
+     FROM growth_events
+     WHERE referral_code = $1
+       AND event_name = 'referral_signup'`,
+    [referralCode]
+  );
+  const inviteCount = countRes.rows[0]?.cnt ?? 0;
+
+  // Upsert the invite_rewards row
+  const upsertRes = await pool.query(
+    `INSERT INTO invite_rewards (user_id, referral_code, invite_count, last_checked_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (user_id) DO UPDATE
+       SET invite_count = $3, last_checked_at = NOW()
+     RETURNING rewards_granted`,
+    [userId, referralCode, inviteCount]
+  );
+
+  const existingRewards: string[] = upsertRes.rows[0]?.rewards_granted ?? [];
+  const newRewards: string[] = [];
+
+  for (const tier of REWARD_TIERS) {
+    if (inviteCount >= tier.threshold && !existingRewards.includes(tier.reward)) {
+      newRewards.push(tier.reward);
+    }
+  }
+
+  if (newRewards.length > 0) {
+    const allRewards = [...existingRewards, ...newRewards];
+    await pool.query(
+      `UPDATE invite_rewards SET rewards_granted = $1::jsonb WHERE user_id = $2`,
+      [JSON.stringify(allRewards), userId]
+    );
+    return { inviteCount, newRewards, allRewards };
+  }
+
+  return { inviteCount, newRewards: [], allRewards: existingRewards };
+}
+
+app.get('/api/v1/rewards/me', async (req, reply) => {
+  reply.header('Cache-Control', 'private, no-store, max-age=0');
+
+  const cookies = parseCookies(req.headers.cookie);
+  const user = await getSessionUser(cookies[AUTH_COOKIE_NAME]);
+  if (!user) {
+    return reply.code(401).send({ success: false, error: 'unauthorized' });
+  }
+
+  // Use email-based referral code (simple, deterministic)
+  const referralCode = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!referralCode) {
+    return reply.send(ok({ invite_count: 0, rewards: [], referral_code: null, tiers: REWARD_TIERS }));
+  }
+
+  try {
+    const result = await checkAndGrantRewards(user.id, referralCode);
+    return reply.send(ok({
+      invite_count: result.inviteCount,
+      rewards: result.allRewards,
+      new_rewards: result.newRewards,
+      referral_code: referralCode,
+      tiers: REWARD_TIERS,
+    }));
+  } catch (err: any) {
+    app.log.error(err, 'Failed to check rewards');
+    return reply.code(500).send({ success: false, error: 'internal_error' });
+  }
+});
+
+app.get('/api/v1/admin/invite-rewards', async (req, reply) => {
+  if (!hasValidAdminToken(req)) {
+    return reply.code(401).send({ success: false, error: 'unauthorized' });
+  }
+  reply.header('Cache-Control', 'private, no-store, max-age=0');
+
+  const res = await pool.query(
+    `SELECT ir.*, u.email, u.name
+     FROM invite_rewards ir
+     JOIN app_users u ON u.id = ir.user_id
+     ORDER BY ir.invite_count DESC
+     LIMIT 200`
+  );
+
+  return reply.send(ok(res.rows));
+});
+
 app.get('/health', async () => ({ ok: true }));
 
 app.get('/api/v1/auth/status', async () => {
@@ -851,6 +947,41 @@ app.post('/api/v1/job-alert-subscriptions', async (req, reply) => {
     existing: false,
     id: insertRes.rows[0]?.id ?? null,
   }, 'Subscription created.'));
+});
+
+app.get('/api/v1/admin/growth-metrics', async (req, reply) => {
+  if (!hasValidAdminToken(req)) {
+    return reply.code(401).send({ success: false, error: 'unauthorized', message: 'Admin token required.' });
+  }
+
+  reply.header('Cache-Control', 'private, no-store, max-age=0');
+
+  try {
+    const summaryRes = await pool.query(`
+      SELECT event_name, COUNT(*)::int as total
+      FROM growth_events
+      GROUP BY event_name
+    `);
+
+    const trendRes = await pool.query(`
+      SELECT 
+        DATE_TRUNC('day', created_at)::text as day,
+        event_name,
+        COUNT(*)::int as count
+      FROM growth_events
+      WHERE created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY 1, 2
+      ORDER BY 1 ASC
+    `);
+
+    return reply.send(ok({
+      summary: summaryRes.rows,
+      trend: trendRes.rows
+    }));
+  } catch (err: any) {
+    app.log.error(err);
+    return reply.code(500).send({ success: false, error: 'internal_error' });
+  }
 });
 
 app.get('/api/v1/admin/job-alert-subscriptions', async (req, reply) => {
