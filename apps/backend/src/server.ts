@@ -1522,7 +1522,7 @@ app.get('/api/v1/rankings', async (req, reply) => {
     })
     .parse(req.query);
 
-  const where: string[] = ["employer_name IS NOT NULL AND employer_name <> ''"];
+  const where: string[] = ["employer_name_normalized IS NOT NULL AND employer_name_normalized <> ''"];
   const params: any[] = [];
 
   if (q.year) {
@@ -1543,7 +1543,7 @@ app.get('/api/v1/rankings', async (req, reply) => {
   }
   if (q.company) {
     params.push(`%${q.company}%`);
-    where.push(`employer_name ILIKE $${params.length}`);
+    where.push(`employer_name_normalized ILIKE $${params.length}`);
   }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -1775,10 +1775,10 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     })
     .parse(req.query);
 
-  const exactWhere: string[] = ["employer_name IS NOT NULL AND employer_name <> ''"];
+  const exactWhere: string[] = ["employer_name_normalized IS NOT NULL AND employer_name_normalized <> ''"];
   const exactParams: any[] = [];
 
-  const trendWhere: string[] = ["employer_name IS NOT NULL AND employer_name <> ''"];
+  const trendWhere: string[] = ["employer_name_normalized IS NOT NULL AND employer_name_normalized <> ''"];
   const trendParams: any[] = [];
 
   if (q.year) {
@@ -1820,10 +1820,10 @@ app.get('/api/v1/rankings/summary', async (req, reply) => {
     const val = `%${q.company}%`;
 
     exactParams.push(val);
-    exactWhere.push(`employer_name ILIKE $${exactParams.length}`);
+    exactWhere.push(`employer_name_normalized ILIKE $${exactParams.length}`);
 
     trendParams.push(val);
-    trendWhere.push(`employer_name ILIKE $${trendParams.length}`);
+    trendWhere.push(`employer_name_normalized ILIKE $${trendParams.length}`);
   }
 
   const exactWhereSql = exactWhere.length ? `WHERE ${exactWhere.join(' AND ')}` : '';
